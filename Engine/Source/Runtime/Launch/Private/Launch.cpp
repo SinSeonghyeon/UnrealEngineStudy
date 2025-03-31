@@ -36,8 +36,10 @@ extern "C" int test_main(int argc, char ** argp)
 /** 
  * PreInits the engine loop 
  */
+ // 5 - Foundation - Entry - EnginePreInit
 int32 EnginePreInit( const TCHAR* CmdLine )
 {
+	// see FEngineLoop::PreInit()
 	int32 ErrorLevel = GEngineLoop.PreInit( CmdLine );
 
 	return( ErrorLevel );
@@ -85,6 +87,7 @@ void LaunchStaticShutdownAfterError()
  * Static guarded main function. Rolled into own function so we can have error handling for debug/ release builds depending
  * on whether a debugger is attached or not.
  */
+ // 4 - Foundation - Entry - GuardMain
 int32 GuardedMain( const TCHAR* CmdLine )
 {
 	FTrackedActivity::GetEngineActivity().Update(TEXT("Starting"), FTrackedActivity::ELight::Yellow);
@@ -93,9 +96,12 @@ int32 GuardedMain( const TCHAR* CmdLine )
 
 #if !(UE_BUILD_SHIPPING)
 
+	// waitforattach 커맨드라인을 추가한다면 디버거가 붙을 때까지 대기하는 코드입니다.
+	// 엔진 시작과 동시에 디버거를 붙이고 싶을때 유용한 코드입니다.
 	// If "-waitforattach" or "-WaitForDebugger" was specified, halt startup and wait for a debugger to attach before continuing
 	if (FParse::Param(CmdLine, TEXT("waitforattach")) || FParse::Param(CmdLine, TEXT("WaitForDebugger")))
 	{
+		// 디버거가 붙을때까지 무한 루프를 돕니다.
 		while (!FPlatformMisc::IsDebuggerPresent())
 		{
 			FPlatformProcess::Sleep(0.1f);
@@ -108,9 +114,16 @@ int32 GuardedMain( const TCHAR* CmdLine )
 	BootTimingPoint("DefaultMain");
 
 	// Super early init code. DO NOT MOVE THIS ANYWHERE ELSE!
+	// 언리얼에는 다양한 델리게이트가 있습니다.
+	// CoreDelegates, CoreUObjectDelegates, WorldDelegates, ...
+	// 이 델리게이트들을 기억해두면 좋습니다.
+	// 언리얼에서는 다양한 델리게이트를 통해서 특정 시점에 코드를 삽입할 수 있습니다.
+	// 여기는 언리얼 엔진이 시작하자마자 코드를 실행할 수 있는 델리게이트입니다.
 	FCoreDelegates::GetPreMainInitDelegate().Broadcast();
 
 	// make sure GEngineLoop::Exit() is always called.
+	// 언리얼은 종종 이런 패턴의 코드를 사용합니다.
+	// 스코프를 벗어날 때 소멸자를 호출하는 RAII패턴..
 	struct EngineLoopCleanupGuard 
 	{ 
 		~EngineLoopCleanupGuard()
@@ -133,6 +146,8 @@ int32 GuardedMain( const TCHAR* CmdLine )
 #endif
 
 	FTrackedActivity::GetEngineActivity().Update(TEXT("Initializing"));
+
+	// see EnginePreInit()
 	int32 ErrorLevel = EnginePreInit( CmdLine );
 
 	// exit if PreInit failed.

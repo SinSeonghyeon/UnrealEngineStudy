@@ -4462,6 +4462,55 @@ int32 FEngineLoop::PreInitPostStartupScreen(const TCHAR* CmdLine)
 	return 0;
 }
 
+// 6 - Foundation - Entry - FEngineLoop::PreInit
+// PreInit 과정에서 주로 하는 일은 모듈, 엔진, 프로젝트 로딩입니다.
+// 언리얼 엔진의 PreInit은 두가지 파트로 나뉘어 진행됩니다.
+// PreInitPreStartupScreen - 정말 다양한 초기화를 수행하지만 간략하게 요약하자면
+// - 커맨드 라인을 분석하여 여러 초기화 코드에 활용
+// - 엔진 및 프로젝트 경로 설정
+// - 실행 모드 결정 - editor, commandlet, dedicatedserver, ...
+// - 현재 스레드를 게임 스레드로 설정
+// - 랜덤 제네레이터를 초기화
+// - 각종 스레드 풀 초기화 - FTaskGraphInterface::Startup, GLargeThreadPool
+// - CoreModules 로드 - 다른 모든 것들이 동작할 때 필요하기 때문에 가장 먼저 로드 "CoreUObject"
+// - Rendering 관련 CVar 초기화, 캐싱
+// - 에디터에서는 이후 다른 모듈 로드 Engine, Renderer, AnimGrphruntime, slaterhirenderer, landscpae 등..
+// - RHI 초기화 - RHIInit() - GDynamicRHI
+// - 셰이더 컴파일 관련 초기화 전역 셰이더 로드
+// - 렌더러 모듈 로드
+// - 슬레이트 RHI 렌데러 생성
+// - Splash 화면 생성 - 앱이 로딩 중임을 시각적으로 알리는 첫 화면
+// 
+// 이후에 알아두면 좋은 추가 내용은 아래 기재하겠습니다.
+// 
+// - 로그 관련 초기화
+// - 커맨드라인으로 프로젝트 이름도 수정 가능
+// - 트레이스 시스템 초기화
+// - LLM 초기화 - 커맨드로 끄고 킬 수 있음
+// - 디버깅을 위한 커맨드라인도 많음.nodrawevents
+// - 커맨드랫 상태일 때 렌더링, 오디오 기능을 활성화 하는 커맨드라인도 있습니다.
+// - 랜덤 제네레이터를 초기화 하는 코드가 있음.FPlatformTime::Cycles를 시드로 사용
+// - 현재 경로를 기준으로 ProjectManager, IPlatformFile, IFimeManager 등을 초기화
+// - Stats 스레드 생성
+// - InitScalabilitySystem
+// - 셰이더 컴파일 관련 초기화
+// - 로딩화면을 관리하는 MoivePlayer 생성
+// 
+// PreInitPostStartupScreen - Splash 화면 출력 후 초기화 되는코드입니다. 여기서도 굉장히 많은 초기화 코드가 호출됩니다.
+// - PreInitPreStartupScreen() 에서 캐싱한 값 복원 - 에디터 여부, 슬레이트 렌더러 등..
+// - MoviePlayer가 있다면 Ini를 통해서 초기화 시도, Splash 화면 재조정
+// - 콘텐츠 마운트
+// - 로컬라이제이션 초기화
+// - UObject 시스템 준비 - 스크립트에 따른 패키지 경로 저장 및 초기화..
+// - 에셋레지스트리 초기화
+// - 디폴트 머티리얼 초기화
+// - 프로젝트 모듈 로드..! 로드를 하며 아마 CDO 생성도 같이 진행될 듯
+// - PostInitRHI -> StartRenderingThread
+// - 로딩 무비 재생 없다면 Splash
+// - bDisableDisregardForGC 가비지 컬렉터 최적화 여부 결정
+// - 커맨드랫이라면 커맨드랫 실행
+// - UE::RenderCommandPipe::Initialize();
+// - RHIUnitTests->RunAllTests();
 int32 FEngineLoop::PreInit(const TCHAR* CmdLine)
 {
 #if UE_ENABLE_ARRAY_SLACK_TRACKING

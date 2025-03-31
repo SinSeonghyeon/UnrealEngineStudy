@@ -105,6 +105,7 @@ void SetupWindowsEnvironment( void )
  * The inner exception handler catches crashes/asserts in native C++ code and is the only way to get the correct callstack
  * when running a 64-bit executable. However, XAudio2 doesn't like this and it may result in no sound.
  */
+ // 3 - Foundation - Entry - GuardedMainWrapper
 LAUNCH_API int32 GuardedMainWrapper( const TCHAR* CmdLine )
 {
 	int32 ErrorLevel = 0;
@@ -115,6 +116,7 @@ LAUNCH_API int32 GuardedMainWrapper( const TCHAR* CmdLine )
 #endif
 		{
 			// Run the guarded code.
+			// see GuardMain()
 			ErrorLevel = GuardedMain( CmdLine );
 		}
 #if !PLATFORM_SEH_EXCEPTIONS_DISABLED
@@ -177,6 +179,7 @@ bool ProcessCommandLine()
 	return false;
 }
 
+// 2 - Foundation - Entry - LaunchWindowsStartup
 LAUNCH_API int32 LaunchWindowsStartup( HINSTANCE hInInstance, HINSTANCE hPrevInstance, char*, int32 nCmdShow, const TCHAR* CmdLine )
 {
 	TRACE_BOOKMARK(TEXT("WinMain.Enter"));
@@ -192,6 +195,7 @@ LAUNCH_API int32 LaunchWindowsStartup( HINSTANCE hInInstance, HINSTANCE hPrevIns
 
 	if (!CmdLine)
 	{
+		// 명령줄을 커맨드 라인을 처리하는 장소입니다.
 		CmdLine = ::GetCommandLineW();
 
 		// Attempt to process the command-line arguments using the standard Windows implementation
@@ -249,16 +253,34 @@ LAUNCH_API int32 LaunchWindowsStartup( HINSTANCE hInInstance, HINSTANCE hPrevIns
 	else
 	{
 		// Use structured exception handling to trap any crashes, walk the the stack and display a crash dialog box.
+
+		// Todo : ShinSeongHyeon - 2025-03-31
+		// SEH 에 대해서 추후에 공부가 필요합니다.
+		// use SEH (structured exception handling) to trap the crash:
+		// haker: if you don't know what SEH is, plz searching it and make sure to understand this!
+		// - one thing I want to point out is that SEH is triggered by OS (kernel mode):
+		//   - the way of behaving SEH is not static, it could be changed anytime by OS provider like MS:
+		//      - cuz, it's related OS security itself
+		//      - if you are interested in this, start from:
+		//          - IDTR register
+		//          - IDT(interrupt descriptor table)
+		//          - ISRs(interrupt service routines)
+		//          - interrupt dispatching
+		//          - kernel patch protection
+		//      - for my recommendation, just skip this, just good to know ~ :)
 #if !PLATFORM_SEH_EXCEPTIONS_DISABLED
 		__try
 #endif
  		{
 			GIsGuarded = 1;
 			// Run the guarded code.
+			// see HuardedMainWrapper()
 			ErrorLevel = GuardedMainWrapper( CmdLine );
 			GIsGuarded = 0;
 		}
 #if !PLATFORM_SEH_EXCEPTIONS_DISABLED
+		// 예외가 트리거되면 여기서 잡습니다.
+		// 엔진에서 크래시가 발생하면, 일반적으로 여기서 크래시 리포트가 생성됩니다.
 		__except( FPlatformMisc::GetCrashHandlingType() == ECrashHandlingType::Default
 				? ( GEnableInnerException ? EXCEPTION_EXECUTE_HANDLER : ReportCrash(GetExceptionInformation()) )
 				: EXCEPTION_CONTINUE_SEARCH )	
@@ -281,6 +303,7 @@ LAUNCH_API int32 LaunchWindowsStartup( HINSTANCE hInInstance, HINSTANCE hPrevIns
 	return ErrorLevel;
 }
 
+// 1 - Foundation - Entry - LaunchWindowsShutdown
 LAUNCH_API void LaunchWindowsShutdown()
 {
 	// Final shut down.
@@ -292,9 +315,12 @@ LAUNCH_API void LaunchWindowsShutdown()
 		Sleep(INFINITE);
 	}
 }
-
+// 0 - Foundation - Entry - BEGIN
+// 이게 언리얼 엔진의 윈도우 플랫폼의 진입점입니다.
 int32 WINAPI WinMain(_In_ HINSTANCE hInInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ char* pCmdLine, _In_ int32 nCmdShow)
 {
+	// see LaunchWindowsShutdown()
+	// see LaunchWindowsStartup()
 	int32 Result = LaunchWindowsStartup(hInInstance, hPrevInstance, pCmdLine, nCmdShow, nullptr);
 	LaunchWindowsShutdown();
 	return Result;
