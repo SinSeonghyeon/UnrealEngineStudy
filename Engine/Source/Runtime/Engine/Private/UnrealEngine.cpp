@@ -1780,30 +1780,41 @@ void UEngine::SetTimeUntilNextGarbageCollection(const float MinTimeUntilNextPass
 	TimeSinceLastPendingKillPurge = TimeBetweenPurgingPendingKillObjects - MinTimeUntilNextPass;
 }
 
+// GarbageCollection - ConditionalCollectGarbage - 2 조건에 따라 가비지 컬렉션을 수행하는 함수 매 틱마다 호출됩니다.
 void UEngine::ConditionalCollectGarbage()
 {
+	// GarbageCollection - Start GFrameCounter와 LastGCFrame가 다를때만 실행. 같은 프레임에 두번 실행하지 않기 위함.
 	if (GFrameCounter != LastGCFrame)
 	{
 		QUICK_SCOPE_CYCLE_COUNTER(STAT_ConditionalCollectGarbage);
 
 #if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+		// 스트리밍 중에도 (비동기 로딩) 가비지 컬렉션을 수행할 것인가?
 		if (CVarStressTestGCWhileStreaming.GetValueOnGameThread() && IsAsyncLoading())
 		{
 			CollectGarbage(GARBAGE_COLLECTION_KEEPFLAGS, true);
 		}
+		// 매 프레임 가비지 컬렉션을 수행할 것인가?
 		else if (CVarForceCollectGarbageEveryFrame.GetValueOnGameThread())
 		{
 			CollectGarbage(GARBAGE_COLLECTION_KEEPFLAGS, true);
 		}
 		else
 #endif
+		// 보통은 아래의 분기를 타게됩니다.
 		{
+			// 강제로 가비지 컬렉션을 실행시켰는가?
+			// TimeSinceLastPendingKillPurge = 1.0f + GetTimeBetweenGarbageCollectionPasses();
+			// bFullPurgeTriggered = bFullPurgeTriggered || bForcePurge;
+			// 내부에서 두 변수를 변경합니다.
 			EGarbageCollectionType ForceTriggerPurge = ShouldForceGarbageCollection();
 			if (ForceTriggerPurge != EGarbageCollectionType::None)
 			{
 				ForceGarbageCollection(ForceTriggerPurge == EGarbageCollectionType::Full);
 			}
 
+			// 위 함수에서 트리거 됐다면 아래로 진입.
+			// 혹은 다른 곳에서 ForceGarbageCollection를 호출하여 트리거 된다면 진입.
 			if (bFullPurgeTriggered)
 			{
 				if (TryCollectGarbage(GARBAGE_COLLECTION_KEEPFLAGS, true))
@@ -1846,33 +1857,46 @@ void UEngine::ConditionalCollectGarbage()
 					}
 				}
 
+				// 데디케이트서버라면 플레이어가 붙어있는지 확인
+				// 월드 비긴플레이를 호출했는지 확인
 				if (bHasAWorldBegunPlay)
 				{
+					// 마지막 가비지 컬릭팅 이후 흐른 시간을 기록
 					TimeSinceLastPendingKillPurge += FApp::GetDeltaTime();
 
+					// 몇초마다 가비지 컬렉션을 실행할지 시간을 받아옵니다. 에디터에서 설정 가능합니다.
 					const float TimeBetweenPurgingPendingKillObjects = GetTimeBetweenGarbageCollectionPasses(bHasPlayersConnected);
 
 					// See if we should delay garbage collect for this frame
+					// 이 프레임에 가비지 컬렉션을 지연해야되는지 확인합니다.
 					if (bShouldDelayGarbageCollect)
 					{
 						bShouldDelayGarbageCollect = false;
 					}
+					// 점진적 가비지 컬렉션이 활성화 되었고 리처블 분석 작업이 아직 진행중인지 확인합니다.
+					// 공식 문서에는 실험적 기능이라고 표시되어 있지만 사용 가능합니다.
 					else if (IsIncrementalReachabilityAnalysisPending())
 					{
 						SCOPE_CYCLE_COUNTER(STAT_GCMarkTime);
 						PerformIncrementalReachabilityAnalysis(GetReachabilityAnalysisTimeLimit());
 					}
 					// Perform incremental purge update if it's pending or in progress.
+					// 점진적 가비지 컬렉션의 퍼지 단계가 아직 끝나지 않았는지 확인합니다. 기본은 점진적 가비지 컬렉션을 사용하지 않기 때문에 항상 !false 를 반환하여 넘어갑니다.
 					else if (!IsIncrementalPurgePending()
 						// Purge reference to pending kill objects every now and so often.
+						// 가비지 컬렉션이 일정 시간마다 진행될 수 있도록 합니다.
 						&& (TimeSinceLastPendingKillPurge > TimeBetweenPurgingPendingKillObjects) && TimeBetweenPurgingPendingKillObjects > 0.f)
 					{
 						SCOPE_CYCLE_COUNTER(STAT_GCMarkTime);
+						// Mark와 Sweep이 별도로 동작한다? 이건 몰랐습니다.
+						// 흠 함수 이름을 봤을 땐 mark 와 sweep이 한번에 동작할 것 같은데요..
 						PerformGarbageCollectionAndCleanupActors();
 					}
 					else
 					{
 						SCOPE_CYCLE_COUNTER(STAT_GCSweepTime);
+						// Mark와 Sweep이 별도로 동작한다? 이건 몰랐습니다.
+						// Sweep은 Mark를 할때가 아니라면 항상 호출됩니다.
 						float IncGCTime = GIncrementalGCTimePerFrame;
 						if (GLowMemoryMemoryThresholdMB > 0.0)
 						{
@@ -1910,11 +1934,12 @@ void UEngine::ConditionalCollectGarbage()
 		PerformIncrementalReachabilityAnalysis(GetReachabilityAnalysisTimeLimit());
 	}
 }
-
+// GarbageCollection - PerformGarbageCollectionAndCleanupActors - 3
 void UEngine::PerformGarbageCollectionAndCleanupActors()
 {
 	// We don't collect garbage while there are outstanding async load requests as we would need
 	// to block on loading the remaining data.
+	// 비동기 로딩중에도 가비지 컬렉션을 허용하거나 비동기 로딩중인지 검사합니다.
 	if (GPerformGCWhileAsyncLoading || !IsAsyncLoading())
 	{
 		bool bForcePurge = true;
@@ -1929,6 +1954,7 @@ void UEngine::PerformGarbageCollectionAndCleanupActors()
 		}
 
 		// Perform housekeeping.
+		// 가비지 컬렉션을 시도합니다.
 		if (TryCollectGarbage(GARBAGE_COLLECTION_KEEPFLAGS, bForcePurge))
 		{
 			ForEachObjectOfClass(UWorld::StaticClass(), [](UObject* World)

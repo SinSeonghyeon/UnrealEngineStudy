@@ -4067,6 +4067,9 @@ public:
 		}
 	};
 	
+	// GarbageCollection - MarkObjectsAsUnreachable - 13
+	// 클러스터를 순회하며 분해할 것과 유지할 것을 구분합니다. 그런데 레퍼런스를 참조하여 구분하는 것이 아니라 플래그만 확인하여 구분하고 있습니다.
+	// 플래그는 어디서 설정하는 것인지..?
 	FORCENOINLINE void MarkClusteredObjectsAsReachable(const EGatherOptions Options, TArray<UObject*>& OutRootObjects)
 	{
 		using namespace UE::GC;
@@ -4079,6 +4082,7 @@ public:
 
 		// StartGathering calculates the number of threads based on the number of objects but here the objects are actually clusters
 		// that contain many more objects than the number of clusters so we want to be able to process at least two clusters per thread	
+		// 클러스터 수에 따라 스레드의 수를 추가합니다.
 		const int32 NumThreads = !!(Options & EGatherOptions::Parallel) ? FMath::Min(GetNumCollectReferenceWorkers(), (ClusterArray.Num() + 1) / 2) : 1;
 		GatherClustersState.Start(Options, ClusterArray.Num(), /* FirstIndex = */ 0, NumThreads);
 		FMarkClustersState::FThreadIterators& ThreadIterators = GatherClustersState.GetThreadIterators();
@@ -4089,6 +4093,7 @@ public:
 			FMarkClustersState::FIterator& ThreadState = ThreadIterators[ThreadIndex];
 			int32 ThisThreadClusteredObjects = 0;
 
+			// 해당 스레드가 부여받은 인덱스까지 반복문을 돌리며 마킹을 합니다.
 			while (ThreadState.Index <= ThreadState.LastIndex)
 			{
 				int32 ClusterIndex = ThreadState.Index++;
@@ -4098,9 +4103,12 @@ public:
 					ThisThreadClusteredObjects += Cluster.Objects.Num();
 
 					FUObjectItem* RootItem = &GUObjectArray.GetObjectItemArrayUnsafe()[Cluster.RootIndex];
+					// 해당 클러스터가 플래그를 확인하여 가비지인지 확인합니다.
 					if (!RootItem->IsGarbage())
 					{
+						// 가비지로 등록이 안됐다면 해당 분기로 진입합니다.
 						bool bKeepCluster = RootItem->HasAnyFlags(EInternalObjectFlags_RootFlags);
+						// 루트셋에 붙어 있는지 확인후 맞다면 유지할 클러스터로 저장합니다.
 						if (bKeepCluster)
 						{
 							RootItem->FastMarkAsReachableInterlocked_ForGC();
@@ -4109,6 +4117,7 @@ public:
 
 						for (int32 ObjectIndex : Cluster.Objects)
 						{
+							// 클러스터에 포함되어있는 Object 중 RootSet에 등록된 오브젝트가 있다면 해당 클러스터는 유지할 클러스터로 저장합니다.
 							FUObjectItem* ClusteredItem = &GUObjectArray.GetObjectItemArrayUnsafe()[ObjectIndex];
 
 							ClusteredItem->FastMarkAsReachableAndClearReachaleInClusterInterlocked_ForGC();
@@ -4122,16 +4131,21 @@ public:
 					}
 					else
 					{
+						// 해체할 클러스터로 등록합니다.
 						ThreadState.Payload.ClustersToDissolve.Add(RootItem);
 					}
 				}
 			}
+			// 현재 스레드에서 담당한 최종 클러스터의 갯수를 추가합니다.
+			// 원자적으로 증가합니다.
 			TotalClusteredObjects += ThisThreadClusteredObjects;
 		}, (GatherClustersState.NumWorkerThreads() == 1) ? EParallelForFlags::ForceSingleThread : EParallelForFlags::None);
 	
+		// 위 스레드들의 수집 결과를 MarkClustersResults에 저장합니다.
 		FMarkClustersArrays MarkClustersResults;
 		GatherClustersState.Finish(MarkClustersResults);
 
+		// 분해해야할 클러스터들을 분해하고 도달할 수 없는 객체로 지정합니다.
 		for (FUObjectItem* ObjectItem : MarkClustersResults.ClustersToDissolve)
 		{
 			// Check if the object is still a cluster root - it's possible one of the previous
@@ -4143,17 +4157,21 @@ public:
 			}
 		}
 
+		// 유지해야할 클러스터 목록을 도달 가능하다고 마킹합니다.
 		for (FUObjectItem* ObjectItem : MarkClustersResults.KeepClusters)
 		{
 			checkSlow(ObjectItem->HasAnyFlags(EInternalObjectFlags::ClusterRoot));
 			// this thing is definitely not marked unreachable, so don't test it here
 			// Make sure all referenced clusters are marked as reachable too
+			// 내부적으로 래퍼런스를 순회하며 가비지 플래그가 없는 클러스터는 도달 가능하다고 체크하는 작업을 하고 있습니다.
+			// 내일 이어서 확인하도록 하겠습니다...!!!!!!
 			MarkReferencedClustersAsReachable<EGCOptions::None>(ObjectItem->GetClusterIndex(), OutRootObjects);
 		}
 
 		GGCStats.NumClusteredObjects = TotalClusteredObjects.load(std::memory_order_acquire);
 	}
-
+	// GarbageCollection - MarkRootObjectsAsReachable - 14
+	// 이번엔 클러스터 단위가 아닌 오브젝트 단위로 순회합니다.
 	FORCENOINLINE void MarkRootObjectsAsReachable(const EGatherOptions Options, const EObjectFlags KeepFlags, TArray<UObject*>& OutRootObjects)
 	{
 		using namespace UE::GC;
@@ -4236,6 +4254,7 @@ public:
 	/**
 	 * Marks all objects that don't have KeepFlags and EInternalObjectFlags_GarbageCollectionKeepFlags as MaybeUnreachable
 	 */
+	 // GarbageCollection - MarkObjectsAsUnreachable - 12
 	FORCENOINLINE void MarkObjectsAsUnreachable(const EObjectFlags KeepFlags)
 	{
 		using namespace UE::GC;
@@ -4276,8 +4295,10 @@ private:
 #endif // !UE_BUILD_SHIPPING && ENABLE_GC_HISTORY
 	}
 
+	// GarbageCollection - PerformReachabilityAnalysis - 11
 	void StartReachabilityAnalysis(EObjectFlags KeepFlags, const EGCOptions Options)
 	{
+		// InitialReferences 를 초기화하고 병렬 옵션이 켜져있다면 우선 FGCObject를 순회하며 레퍼런스를 파악합니다.
 		BeginInitialReferenceCollection(Options);
 
 		// Reset object count.
@@ -4286,6 +4307,7 @@ private:
 		InitialObjects.Reset();
 
 		// Make sure GC referencer object is checked for references to other objects even if it resides in permanent object pool
+		// GC를 무시하는 오브젝트들을 InitialObjects에 포함시킵니다.
 		if (FPlatformProperties::RequiresCookedData() && GUObjectArray.IsDisregardForGC(FGCObject::GGCObjectReferencer))
 		{
 			InitialObjects.Add(FGCObject::GGCObjectReferencer);
@@ -4293,6 +4315,7 @@ private:
 
 		{
 			const double StartTime = FPlatformTime::Seconds();
+			// 일반 Object들 중 도달할 수 없는 Object를 마킹합니다.
 			MarkObjectsAsUnreachable(KeepFlags);
 			const double ElapsedTime = FPlatformTime::Seconds() - StartTime;
 			if (!Stats.bFoundGarbageRef)
@@ -4375,12 +4398,15 @@ public:
 	 *
 	 * @param KeepFlags		Objects with these flags will be kept regardless of being referenced or not
 	 */
+	 // GarbageCollection - PerformReachabilityAnalysis - 10
 	void PerformReachabilityAnalysis(EObjectFlags KeepFlags, const EGCOptions Options)
 	{
 		LLM_SCOPE(ELLMTag::GC);
 
+		// 가비지 컬렉션이 중단된 여부가 있는지 레퍼런스를 찾았는지?
 		const bool bIsGarbageTracking = !GReachabilityState.IsSuspended() && Stats.bFoundGarbageRef;
 
+		// 중단된적 없다면 아래로 들어가 Mark를 시작합니다.
 		if (!GReachabilityState.IsSuspended())
 		{
 			StartReachabilityAnalysis(KeepFlags, Options);
@@ -5335,6 +5361,7 @@ FORCENOINLINE static void CollectGarbageFull(EObjectFlags KeepFlags)
 	CollectGarbageImpl<true>(KeepFlags);
 }
 
+// GarbageCollection - CollectGarbageInternal - 4 진짜 가비지 수집을 시도합니다.
 FORCEINLINE void CollectGarbageInternal(EObjectFlags KeepFlags, bool bPerformFullPurge)
 {
 	const double StartTime = FPlatformTime::Seconds();
@@ -5369,6 +5396,7 @@ EGatherOptions GetObjectGatherOptions()
  * @param	KeepFlags			objects with those flags will be kept regardless of being referenced or not
  * @param	bPerformFullPurge	if true, perform a full purge after the mark pass
  */
+ // GarbageCollection - PreCollectGarbageImpl - 7 가비지 컬렉션 수행 전에 호출되는 함수입니다.
 template<bool bPerformFullPurge>
 void PreCollectGarbageImpl(EObjectFlags KeepFlags)
 {
@@ -5376,6 +5404,7 @@ void PreCollectGarbageImpl(EObjectFlags KeepFlags)
 
 	const double PreCollectStartTime = FPlatformTime::Seconds();
 
+	// 가비지 컬렉션 실행 대기중 값을 초기화합니다. 즉 실행 중이 됩니다.
 	FGCCSyncObject::Get().ResetGCIsWaiting();
 
 #if defined(WITH_CODE_GUARD_HANDLER) && WITH_CODE_GUARD_HANDLER
@@ -5411,11 +5440,13 @@ void PreCollectGarbageImpl(EObjectFlags KeepFlags)
 		TRACE_CPUPROFILER_EVENT_SCOPE(BroadcastPreGarbageCollect);
 		FCoreUObjectDelegates::GetPreGarbageCollectDelegate().Broadcast();
 	}
+	// 현재 프레임 카운트를 마지막 GCFrame으로 기록합니다.
 	GLastGCFrame = GFrameCounter;
 
 	{
+		// 가비지 컬렉팅 진행중으로 변경합니다.
 		GIsGarbageCollecting = true;
-
+		
 		// Make sure previous incremental purge has finished or we do a full purge pass in case we haven't kicked one
 		// off yet since the last call to garbage collection.
 		if (IsIncrementalPurgePending())
@@ -5437,6 +5468,8 @@ void PreCollectGarbageImpl(EObjectFlags KeepFlags)
 			IsAsyncLoading() ? TEXT(" while async loading") : TEXT(""));
 
 		// The hash tables are only locked during this scope of reachability analysis.
+		// 가비지 컬렉터 도달 여부를 확인하는 동안 HashTables 이 잠깁니다.
+		// 다른 스레드에서 UObject를 찾거나 새로운 UObject의 해싱을 막기 위해서입니다.
 		GIsGarbageCollectingAndLockingUObjectHashTables = true;
 		LockUObjectHashTables();
 
@@ -5446,6 +5479,8 @@ void PreCollectGarbageImpl(EObjectFlags KeepFlags)
 			check(!GObjPurgeIsRequired);
 
 			// This can happen if someone disables clusters from the console (gc.CreateGCClusters)
+			// 언리얼 엔진은 가비지 컬렉션의 효율을 높이기 위해 UObject를 클러스터 단위로 가비지 컬렉팅합니다.
+			// 의도적으로 이 클러스터를 해제할 수 있습니다.
 			if (!GCreateGCClusters && GUObjectClusters.GetNumAllocatedClusters())
 			{
 				GUObjectClusters.DissolveClusters(true);
@@ -5477,15 +5512,19 @@ void PreCollectGarbageImpl(EObjectFlags KeepFlags)
 	GGCStats.TotalTime += FPlatformTime::Seconds() - PreCollectStartTime;
 }
 
+// GarbageCollection - CollectGarbageImpl - 9
 template<bool bPerformFullPurge>
 void CollectGarbageImpl(EObjectFlags KeepFlags)
 {
 	{
 		// Reachability analysis.
 		{
+			// 가비지 컬렉션의 관련된 옵션을 반환합니다.
+			// 싱글 스레드로 돌 것인지 병렬로 돌 것인지 증분인지 풀퍼지인지 등..
 			const EGCOptions Options = GetReferenceCollectorOptions(bPerformFullPurge);
 
 			// Perform reachability analysis.
+			// 드디어 가비지 컬렉션으 Mark를 실행합니다.
 			FRealtimeGC GC;
 			GC.PerformReachabilityAnalysis(KeepFlags, Options);
 		}
@@ -5616,11 +5655,12 @@ void PostCollectGarbageImpl(EObjectFlags KeepFlags)
 		TRACE_END_REGION(TEXT("GarbageCollection"));
 	}
 }
-
+// GarbageCollection - FReachabilityAnalysisState::CollectGarbage - 5 진짜 가비지 수집을 시도합니다.
 void FReachabilityAnalysisState::CollectGarbage(EObjectFlags KeepFlags, bool bFullPurge)
 {
 	using namespace UE::GC::Private;
 
+	// 점진적 가비지 컬렉션 기능이 활성화 되어 있는지 확인합니다.
 	if (GIsIncrementalReachabilityPending)
 	{
 		// Something triggered a new GC run but we're in the middle of incremental reachability analysis.
@@ -5634,13 +5674,19 @@ void FReachabilityAnalysisState::CollectGarbage(EObjectFlags KeepFlags, bool bFu
 		AcquireGCLock();
 	}
 
+	// 내부적으로 플래그와 풀 퍼지 여부를 캐싱합니다.
 	ObjectKeepFlags = KeepFlags;
 	bPerformFullPurge = bFullPurge;
 
+	// 타임 리밋이 있는지 확인합니다.
+	// 점진적 도달가 활성화 되어있고 풀퍼지가 비활성화 됐다면 타임 리밋이 존재합니다.
+	// 너무 오랜시간 가비지 컬렉션에 소요하지 않기 위함인 것 같습니다.
 	const bool bReachabilityUsingTimeLimit = !bFullPurge && GAllowIncrementalReachability;
 	PerformReachabilityAnalysisAndConditionallyPurgeGarbage(bReachabilityUsingTimeLimit);
 }
 
+// GarbageCollection - FReachabilityAnalysisState::PerformReachabilityAnalysisAndConditionallyPurgeGarbage - 6 기본적으로 bReachabilityUsingTimeLimit값은 false가 들어옵니다.
+// 함수 명으로 미뤄보았을 때 도달여부 검사 후 해제 작업을 시도합니다.
 void FReachabilityAnalysisState::PerformReachabilityAnalysisAndConditionallyPurgeGarbage(bool bReachabilityUsingTimeLimit)
 {
 	using namespace UE::GC::Private;
@@ -5649,6 +5695,8 @@ void FReachabilityAnalysisState::PerformReachabilityAnalysisAndConditionallyPurg
 
 	if (!GIsIncrementalReachabilityPending)
 	{
+		// GGCStats에 여러 값을 캐싱합니다.
+		// 추후에 각 항목이 무슨 값인지 확인 필요합니다.
 		GGCStats = UE::GC::Private::FStats();
 		GGCStats.bInProgress = true;
 		GGCStats.bStartedAsFullPurge = bPerformFullPurge;
@@ -5658,6 +5706,9 @@ void FReachabilityAnalysisState::PerformReachabilityAnalysisAndConditionallyPurg
 	}
 	GGCStats.bFinishedAsFullPurge = bPerformFullPurge;
 
+	// 풀퍼지 여부를 확인하여 다른 분기를 타게합니다.
+	// 기본은 false로 들어오게 될 것으로 예상됩니다.
+	// 가비지 수집 전에 사용되는 함수로 예상됩니다.
 	if (bPerformFullPurge)
 	{
 		UE::GC::PreCollectGarbageImpl<true>(ObjectKeepFlags);
@@ -5667,6 +5718,8 @@ void FReachabilityAnalysisState::PerformReachabilityAnalysisAndConditionallyPurg
 		UE::GC::PreCollectGarbageImpl<false>(ObjectKeepFlags);
 	}	
 	
+	// 점진적 도달여부를 쓸지 말지 확인하는 변수입니다.
+	// 기본적으로 점진적 도달은 사용하지 않습니다.
 	const bool bForceNonIncrementalReachability =
 		!GIsIncrementalReachabilityPending &&
 		(bPerformFullPurge || !GAllowIncrementalReachability);
@@ -5774,15 +5827,18 @@ void FReachabilityAnalysisState::PerformReachabilityAnalysisAndConditionallyPurg
 		UE::GC::PostCollectGarbageImpl<false>(ObjectKeepFlags);
 	}
 }
-
+// GarbageCollection - FReachabilityAnalysisState::PerformReachabilityAnalysis - 8 실제로 레퍼런스가 도달하는지 확인하는 함수입니다.
+// Mark에 해당하는 함수라고 예상됩니다.
 void FReachabilityAnalysisState::PerformReachabilityAnalysis()
 {
 	if (!bIsSuspended)
 	{
+		// NumIterations를 0으로 초기화하는 코드가 있습니다.
 		Init();
 		NumRechabilityIterationsToSkip = FMath::Max(0, GDelayReachabilityIterations);
 	}
 
+	// 풀퍼지라면 아래로 바로 들어가게 됩니다.
 	if (bPerformFullPurge)
 	{
 		UE::GC::CollectGarbageFull(ObjectKeepFlags);
@@ -6009,8 +6065,10 @@ void CollectGarbage(EObjectFlags KeepFlags, bool bPerformFullPurge)
 	// GC lock was released after reachability analysis inside CollectGarbageInternal
 }
 
+// GarbageCollection - TryCollectGarbage - 3 가비지 수집을 시도합니다.
 bool TryCollectGarbage(EObjectFlags KeepFlags, bool bPerformFullPurge)
 {
+	// 아직 초기 로딩중이라면 가비지 컬렉션을 수행하지 않습니다. 이것은 안전하지 않습니다.
 	if (GIsInitialLoad)
 	{
 		// During initial load classes may not yet have their GC token streams assembled
@@ -6019,11 +6077,13 @@ bool TryCollectGarbage(EObjectFlags KeepFlags, bool bPerformFullPurge)
 	}
 
 	// No other thread may be performing UObject operations while we're running so try to acquire GC lock
+	// 점진적으로 리처블 여부를 검사할 수 있는지 확인하고 GC락을 획득합니다.
 	if (UE::GC::GIsIncrementalReachabilityPending)
 	{
 		// Since we're already in the middle of a previous GC acquire GC lock even if it means we have to block main thread
 		AcquireGCLock();
 	}	
+	// GC Lock을 획득하지 못했다면 다시 락을 획득하기 위해 시도합니다.
 	else if (!FGCCSyncObject::Get().TryGCLock())
 	{
 		if (GNumRetriesBeforeForcingGC > 0 && GNumAttemptsSinceLastGC > GNumRetriesBeforeForcingGC)
@@ -6041,10 +6101,11 @@ bool TryCollectGarbage(EObjectFlags KeepFlags, bool bPerformFullPurge)
 	}
 
 	// Perform actual garbage collection
+	// 진짜 가비지 컬렉션을 수행합니다.
 	UE::GC::CollectGarbageInternal(KeepFlags, bPerformFullPurge);
 
 	// GC lock was released after reachability analysis inside CollectGarbageInternal
-
+	// 내부에서 도달 여부 확인 후 락을 해제하였습니다.
 	return true;
 }
 
