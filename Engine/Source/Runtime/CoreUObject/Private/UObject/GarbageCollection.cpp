@@ -1080,6 +1080,8 @@ FORCEINLINE static void MarkReferencedClustersAsReachableThunk(int32 ClusterInde
 }
 
 /** Marks all objects that can't be directly in a cluster but are referenced by it as reachable */
+// GarbageCollection - 16 - MarkClusterMutableObjectsAsReachable - 클러스터에서 다른 클러스터로 도달할 수 있는지 확인합니다. 클러스터에서 도달할 수 있는 오브젝트들을 Reachable로 표시합니다. 
+// MutableObject란? 일반 오브젝트와 무슨 차이가 있는지 확인 필요. 클러스터에 추가할 순 없지만 레퍼런스는 확인해야되는 객체?
 template<EGCOptions Options, class ContainerType>
 static bool MarkClusterMutableObjectsAsReachable(FUObjectCluster& Cluster, ContainerType& ObjectsToSerialize)
 {
@@ -1156,6 +1158,7 @@ FORCEINLINE static void MarkClusterMutableCellsAsReachable(FUObjectCluster& Clus
 #endif
 
 /** Marks all clusters referenced by another cluster as reachable */
+// GarbageCollection - 15 - MarkReferencedClustersAsReachable - 클러스터에서 다른 클러스터로 도달할 수 있는지 확인합니다.
 template<EGCOptions Options, class ContainerType>
 static FORCENOINLINE void MarkReferencedClustersAsReachable(int32 ClusterIndex, ContainerType& ObjectsToSerialize)
 {
@@ -1169,6 +1172,7 @@ static FORCENOINLINE void MarkReferencedClustersAsReachable(int32 ClusterIndex, 
 	FUObjectCluster& Cluster = GUObjectClusters[ClusterIndex];
 	UE::GC::GDetailedStats.IncClusterToClusterRefs(Cluster.ReferencedClusters.Num());
 	// Also mark all referenced objects from outside of the cluster as reachable
+	// 참조하고 있는 다른 클러스터가 해제됐는지 확인합니다. 가비지가 됐다면 ReferncedClusterIndex의 값을 -1로 변경
 	for (int32& ReferncedClusterIndex : Cluster.ReferencedClusters)
 	{
 		if (ReferncedClusterIndex >= 0) // Garbag Elimination support
@@ -3012,6 +3016,7 @@ public:
 		HandleValidReference(Context, Reference, Metadata);
 	}
 
+	// GarbageCollection - 23 - HandleValidReference 여기서 ObjectsToSerialize에 추가하고 있다. 도달 가능 여부도 추가하는 중..!
 	FORCEINLINE static bool HandleValidReference(FWorkerContext& Context, FImmutableReference Reference, FReferenceMetadata Metadata)
 	{
 		if (Metadata.ObjectItem->MarkAsReachableInterlocked_ForGC())
@@ -3482,7 +3487,7 @@ public:
 	bool TracksHistory() const { return bTrackHistory; }
 	bool TracksGarbage() const { return bTrackGarbage; }
 	bool IsForceEnabled() const { return bForceEnable; }
-
+	// GarbageCollection - 22 - HandleTokenStreamObjectReference
 	FORCENOINLINE void HandleTokenStreamObjectReference(FWorkerContext& Context, const UObject* ReferencingObject, UObject*& Object, FMemberId MemberId, EOrigin Origin, bool bAllowReferenceElimination)
 	{
 		UE::GC::GDetailedStats.IncreaseObjectRefStats(Object);
@@ -3505,6 +3510,7 @@ public:
 				}
 			}
 			
+			// HandleValidReference를 호출하며 다음 탐색 오브젝트를 추가한다!
 			bool bReachedFirst = TReachabilityProcessor<Options>::HandleValidReference(Context, FImmutableReference{Object}, Metadata);
 
 			if (bReachedFirst && bTrackHistory)
@@ -4067,7 +4073,7 @@ public:
 		}
 	};
 	
-	// GarbageCollection - MarkObjectsAsUnreachable - 13
+	// GarbageCollection - 14 - MarkObjectsAsUnreachable 
 	// 클러스터를 순회하며 분해할 것과 유지할 것을 구분합니다. 그런데 레퍼런스를 참조하여 구분하는 것이 아니라 플래그만 확인하여 구분하고 있습니다.
 	// 플래그는 어디서 설정하는 것인지..?
 	FORCENOINLINE void MarkClusteredObjectsAsReachable(const EGatherOptions Options, TArray<UObject*>& OutRootObjects)
@@ -4164,13 +4170,12 @@ public:
 			// this thing is definitely not marked unreachable, so don't test it here
 			// Make sure all referenced clusters are marked as reachable too
 			// 내부적으로 래퍼런스를 순회하며 가비지 플래그가 없는 클러스터는 도달 가능하다고 체크하는 작업을 하고 있습니다.
-			// 내일 이어서 확인하도록 하겠습니다...!!!!!!
 			MarkReferencedClustersAsReachable<EGCOptions::None>(ObjectItem->GetClusterIndex(), OutRootObjects);
 		}
 
 		GGCStats.NumClusteredObjects = TotalClusteredObjects.load(std::memory_order_acquire);
 	}
-	// GarbageCollection - MarkRootObjectsAsReachable - 14
+	// GarbageCollection - 17 - MarkRootObjectsAsReachable  클러스터가 아닌 오브젝트 단위로 순회하며 initialObject를 생성
 	// 이번엔 클러스터 단위가 아닌 오브젝트 단위로 순회합니다.
 	FORCENOINLINE void MarkRootObjectsAsReachable(const EGatherOptions Options, const EObjectFlags KeepFlags, TArray<UObject*>& OutRootObjects)
 	{
@@ -4181,12 +4186,16 @@ public:
 		FMarkRootsState MarkRootsState;		
 
 		{
+			// RootSet을 받아옵니다.
 			GRootsCritical.Lock();
 			TArray<int32> RootsArray(GRoots.Array());				
 			GRootsCritical.Unlock();
+
+			// RootSet의 양에 따라 쓰레드의 갯수를 설정합니다.
 			MarkRootsState.Start(Options, RootsArray.Num());
 			FMarkRootsState::FThreadIterators& ThreadIterators = MarkRootsState.GetThreadIterators();
 
+			// Root의 경우 모두 도달 가능으로 변경합니다.
 			ParallelFor(TEXT("GC.MarkRootObjectsAsReachable"), MarkRootsState.NumWorkerThreads(), 1, [&ThreadIterators, &RootsArray](int32 ThreadIndex)
 			{
 				TRACE_CPUPROFILER_EVENT_SCOPE(MarkClusteredObjectsAsReachableTask);
@@ -4214,8 +4223,11 @@ public:
 		FMarkObjectsState MarkObjectsState;
 
 		// This is super slow as we need to look through all existing UObjects and access their memory to check EObjectFlags
+		// 모든 오브젝트의 메모리에 접근하여 플래그를 확인하여야 하기에 매우 느립니다.
+		// 루트 셋이 아니더라도 특정 플래그를 가진 객체를 도달 가능으로 표시하기 위한 분기입니다.
 		if (KeepFlags != RF_NoFlags)
 		{
+			// 오브젝트 수에 따라 쓰레드의 수를 설정합니다.
 			MarkObjectsState.Start(Options, GUObjectArray.GetObjectArrayNum(), GUObjectArray.GetFirstGCIndex());
 
 			FMarkObjectsState::FThreadIterators& ThreadIterators = MarkObjectsState.GetThreadIterators();
@@ -4244,17 +4256,19 @@ public:
 		}
 
 		// Preallocate the resulting array taking both MarkRootsState and MarkObjectsState results into account to avoild reallocating OutRootObjects in each of the Finish() calls.
+		// 도달 가능으로 마킹한 모든 오브젝트를 저장합니다.
 		OutRootObjects.Reserve(OutRootObjects.Num() + MarkRootsState.NumGathered() + MarkObjectsState.NumGathered() + ObjectLookahead);
 		MarkRootsState.Finish(OutRootObjects);
 		MarkObjectsState.Finish(OutRootObjects);
 
+		// 도달 가능으로 표시된 모든 오브젝트의 수를 저장합니다.
 		GGCStats.NumRoots = OutRootObjects.Num();
 	}
 
 	/**
 	 * Marks all objects that don't have KeepFlags and EInternalObjectFlags_GarbageCollectionKeepFlags as MaybeUnreachable
 	 */
-	 // GarbageCollection - MarkObjectsAsUnreachable - 12
+	 // GarbageCollection - 13 - MarkObjectsAsUnreachable 
 	FORCENOINLINE void MarkObjectsAsUnreachable(const EObjectFlags KeepFlags)
 	{
 		using namespace UE::GC;
@@ -4295,7 +4309,7 @@ private:
 #endif // !UE_BUILD_SHIPPING && ENABLE_GC_HISTORY
 	}
 
-	// GarbageCollection - PerformReachabilityAnalysis - 11
+	// GarbageCollection - 12 - PerformReachabilityAnalysis  루트셋을 만드는 시점. InitialObjects, initialReference
 	void StartReachabilityAnalysis(EObjectFlags KeepFlags, const EGCOptions Options)
 	{
 		// InitialReferences 를 초기화하고 병렬 옵션이 켜져있다면 우선 FGCObject를 순회하며 레퍼런스를 파악합니다.
@@ -4325,9 +4339,10 @@ private:
 			UE_LOG(LogGarbage, Verbose, TEXT("%f ms for MarkObjectsAsUnreachable Phase (%d Objects To Serialize)"), ElapsedTime * 1000, InitialObjects.Num());
 		}
 	}
-
+	// GarbageCollection - 18 - PerformReachabilityAnalysisPass  생성된 InitialObjects, initialReference를 순회하며 레퍼런스를 검사하는 함수.
 	void PerformReachabilityAnalysisPass(const EGCOptions Options)
 	{
+		// 작업을 시작하기전 Context를 채우는 과정을 진행합니다.
 		FContextPoolScope Pool;
 		FWorkerContext* Context = nullptr;
 		const bool bIsSingleThreaded = !(Options & EGCOptions::Parallel);
@@ -4373,8 +4388,11 @@ private:
 			}
 		}
 
+		// 패딩을 넣어 초기 객체를 넘겨줍니다.
 		Context->SetInitialObjectsUnpadded(InitialObjects);
 
+		// 본격적인 그래프 탐색이 될 것으로 예상 PerformReachabilityAnalysisOnObjectsInternal를 호출하게 됩니다.
+		// see PerformReachabilityAnalysisOnObjectsInternal
 		PerformReachabilityAnalysisOnObjects(Context, Options);
 
 		if (!GReachabilityState.CheckIfAnyContextIsSuspended())
@@ -4398,7 +4416,7 @@ public:
 	 *
 	 * @param KeepFlags		Objects with these flags will be kept regardless of being referenced or not
 	 */
-	 // GarbageCollection - PerformReachabilityAnalysis - 10
+	 // GarbageCollection - 11 - PerformReachabilityAnalysis 
 	void PerformReachabilityAnalysis(EObjectFlags KeepFlags, const EGCOptions Options)
 	{
 		LLM_SCOPE(ELLMTag::GC);
@@ -4409,6 +4427,8 @@ public:
 		// 중단된적 없다면 아래로 들어가 Mark를 시작합니다.
 		if (!GReachabilityState.IsSuspended())
 		{
+			// 놀랍게도 InitialObjects를 수집하기 위한 단계였습니다. 즉, 시작을 위한 루트를 모으는 단계..
+			// initialReference의 경우 FGCObject에서 참조한 UObject의 수집 결과입니다.
 			StartReachabilityAnalysis(KeepFlags, Options);
 			// We start verse GC here so that the objects are unmarked prior to verse marking them
 			StartVerseGC();
@@ -4419,6 +4439,7 @@ public:
 
 			do
 			{
+				// InitialObjects, initialReference를 순회하며 레퍼런스를 검사하는 함수.
 				PerformReachabilityAnalysisPass(Options);
 			// NOTE: It is critical that VerseGCActive is called prior to checking GReachableObjects.  While VerseGCActive is true,
 			// items can still be added to GReachableObjects.  So if reversed, during the point where GReachableObjects is checked
@@ -5361,7 +5382,7 @@ FORCENOINLINE static void CollectGarbageFull(EObjectFlags KeepFlags)
 	CollectGarbageImpl<true>(KeepFlags);
 }
 
-// GarbageCollection - CollectGarbageInternal - 4 진짜 가비지 수집을 시도합니다.
+// GarbageCollection - 5 - CollectGarbageInternal 진짜 가비지 수집을 시도합니다.
 FORCEINLINE void CollectGarbageInternal(EObjectFlags KeepFlags, bool bPerformFullPurge)
 {
 	const double StartTime = FPlatformTime::Seconds();
@@ -5396,7 +5417,7 @@ EGatherOptions GetObjectGatherOptions()
  * @param	KeepFlags			objects with those flags will be kept regardless of being referenced or not
  * @param	bPerformFullPurge	if true, perform a full purge after the mark pass
  */
- // GarbageCollection - PreCollectGarbageImpl - 7 가비지 컬렉션 수행 전에 호출되는 함수입니다.
+ // GarbageCollection - 8 - PreCollectGarbageImpl  가비지 컬렉션 수행 전에 호출되는 함수입니다.
 template<bool bPerformFullPurge>
 void PreCollectGarbageImpl(EObjectFlags KeepFlags)
 {
@@ -5512,7 +5533,7 @@ void PreCollectGarbageImpl(EObjectFlags KeepFlags)
 	GGCStats.TotalTime += FPlatformTime::Seconds() - PreCollectStartTime;
 }
 
-// GarbageCollection - CollectGarbageImpl - 9
+// GarbageCollection - 10 - CollectGarbageImpl 
 template<bool bPerformFullPurge>
 void CollectGarbageImpl(EObjectFlags KeepFlags)
 {
@@ -5655,7 +5676,7 @@ void PostCollectGarbageImpl(EObjectFlags KeepFlags)
 		TRACE_END_REGION(TEXT("GarbageCollection"));
 	}
 }
-// GarbageCollection - FReachabilityAnalysisState::CollectGarbage - 5 진짜 가비지 수집을 시도합니다.
+// GarbageCollection - 6 - FReachabilityAnalysisState::CollectGarbage  진짜 가비지 수집을 시도합니다.
 void FReachabilityAnalysisState::CollectGarbage(EObjectFlags KeepFlags, bool bFullPurge)
 {
 	using namespace UE::GC::Private;
@@ -5685,7 +5706,7 @@ void FReachabilityAnalysisState::CollectGarbage(EObjectFlags KeepFlags, bool bFu
 	PerformReachabilityAnalysisAndConditionallyPurgeGarbage(bReachabilityUsingTimeLimit);
 }
 
-// GarbageCollection - FReachabilityAnalysisState::PerformReachabilityAnalysisAndConditionallyPurgeGarbage - 6 기본적으로 bReachabilityUsingTimeLimit값은 false가 들어옵니다.
+// GarbageCollection - 7 - FReachabilityAnalysisState::PerformReachabilityAnalysisAndConditionallyPurgeGarbage 기본적으로 bReachabilityUsingTimeLimit값은 false가 들어옵니다.
 // 함수 명으로 미뤄보았을 때 도달여부 검사 후 해제 작업을 시도합니다.
 void FReachabilityAnalysisState::PerformReachabilityAnalysisAndConditionallyPurgeGarbage(bool bReachabilityUsingTimeLimit)
 {
@@ -5827,7 +5848,7 @@ void FReachabilityAnalysisState::PerformReachabilityAnalysisAndConditionallyPurg
 		UE::GC::PostCollectGarbageImpl<false>(ObjectKeepFlags);
 	}
 }
-// GarbageCollection - FReachabilityAnalysisState::PerformReachabilityAnalysis - 8 실제로 레퍼런스가 도달하는지 확인하는 함수입니다.
+// GarbageCollection - 9 - FReachabilityAnalysisState::PerformReachabilityAnalysis  실제로 레퍼런스가 도달하는지 확인하는 함수입니다.
 // Mark에 해당하는 함수라고 예상됩니다.
 void FReachabilityAnalysisState::PerformReachabilityAnalysis()
 {
@@ -6065,7 +6086,7 @@ void CollectGarbage(EObjectFlags KeepFlags, bool bPerformFullPurge)
 	// GC lock was released after reachability analysis inside CollectGarbageInternal
 }
 
-// GarbageCollection - TryCollectGarbage - 3 가비지 수집을 시도합니다.
+// GarbageCollection - 4 - TryCollectGarbage  가비지 수집을 시도합니다.
 bool TryCollectGarbage(EObjectFlags KeepFlags, bool bPerformFullPurge)
 {
 	// 아직 초기 로딩중이라면 가비지 컬렉션을 수행하지 않습니다. 이것은 안전하지 않습니다.
@@ -6846,7 +6867,8 @@ void ReleaseAsyncProcessingContexts(FWorkerContext& InContext, TArrayView<FWorke
 		ContextPool.ReturnToPool(Context);
 	}
 }
-
+// 컨텍스트에 정보를 채워넣고 스레드를 나눠서 가비지 컬렉션을 수행합니다.
+// ProcessSync 는 ProcessObjectArray(FWorkerContext& Context)를 호출하게 됩니다.
 void ProcessAsync(void (*ProcessSync)(void*, FWorkerContext&), void* Processor, FWorkerContext& InContext)
 {
 	using namespace UE::GC;

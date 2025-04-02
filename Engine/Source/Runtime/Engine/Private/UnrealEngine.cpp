@@ -1780,7 +1780,7 @@ void UEngine::SetTimeUntilNextGarbageCollection(const float MinTimeUntilNextPass
 	TimeSinceLastPendingKillPurge = TimeBetweenPurgingPendingKillObjects - MinTimeUntilNextPass;
 }
 
-// GarbageCollection - ConditionalCollectGarbage - 2 조건에 따라 가비지 컬렉션을 수행하는 함수 매 틱마다 호출됩니다.
+// GarbageCollection - 2 - ConditionalCollectGarbage 조건에 따라 가비지 컬렉션을 수행하는 함수 매 틱마다 호출됩니다.
 void UEngine::ConditionalCollectGarbage()
 {
 	// GarbageCollection - Start GFrameCounter와 LastGCFrame가 다를때만 실행. 같은 프레임에 두번 실행하지 않기 위함.
@@ -1934,7 +1934,7 @@ void UEngine::ConditionalCollectGarbage()
 		PerformIncrementalReachabilityAnalysis(GetReachabilityAnalysisTimeLimit());
 	}
 }
-// GarbageCollection - PerformGarbageCollectionAndCleanupActors - 3
+// GarbageCollection - 3 - PerformGarbageCollectionAndCleanupActors 
 void UEngine::PerformGarbageCollectionAndCleanupActors()
 {
 	// We don't collect garbage while there are outstanding async load requests as we would need

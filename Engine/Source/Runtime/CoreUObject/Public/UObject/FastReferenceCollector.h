@@ -711,10 +711,12 @@ struct TDirectDispatcher
 	FWorkerContext& Context;
 	FReferenceCollector& Collector;
 
+	// GarbageCollection - 21 - HandleReferenceDirectly 여기로 들어오게 된다!!
 	FORCEINLINE void HandleReferenceDirectly(UObject* ReferencingObject, UObject*& Object, FMemberId MemberId, EOrigin Origin, bool bAllowReferenceElimination) const
 	{
 		if (IsObjectHandleResolved(*reinterpret_cast<FObjectHandle*>(&Object)))
 		{
+			// HandleTokenStreamObjectReference 를 호출할 때 SerializeObject를 추가
 			Processor.HandleTokenStreamObjectReference(Context, ReferencingObject, Object, MemberId, Origin, bAllowReferenceElimination);
 		}
 		Context.Stats.AddReferences(1);
@@ -835,6 +837,8 @@ COREUOBJECT_API void ProcessAsync(void (*ProcessSync)(void*, FWorkerContext&), v
  *
  * @see FSimpleReferenceProcessorBase and TDefaultCollector for documentation on required APIs
  */
+ // GarbageCollection - 19 - TFastReferenceCollector  가비지 컬렉션의 핵심과도 같은 코드입니다. 
+ // UObject 그래프를 순회하며 참조 관계를 추적합니다.
 template <typename ProcessorType, typename CollectorType>
 class TFastReferenceCollector : public FGCInternals
 {
@@ -843,35 +847,47 @@ public:
 
 	void ProcessObjectArray(FWorkerContext& Context)
 	{
+		// 현재 컨텍스트의 상태를 기록합니다.
 		Context.bDidWork = true;
 		Context.bIsSuspended = false;
 		static_assert(!EnumHasAllFlags(Options, EGCOptions::Parallel | EGCOptions::AutogenerateSchemas), "Can't assemble token streams in parallel");
 		
+		// Collector의 역할은? 대부분 dipathcer가 처리하는 것 같은데,,
 		CollectorType Collector(Processor, Context);
 
 		// Either TDirectDispatcher living on the stack or TBatchDispatcher reference owned by Collector
+		// 참조가 발견됐을 때 어떤 방식으로 처리할지 결정하는 중개자
 		decltype(GetDispatcher(Collector, Processor, Context)) Dispatcher = GetDispatcher(Collector, Processor, Context);
 
 StoleContext:
 		// Process initial references first
 		Context.ReferencingObject = FGCObject::GGCObjectReferencer;
+
+		// FGCObject에서 참조한 대상은 Dispatcher에 넘겨 GC 대상이 아님을 마킹합니다.
 		for (UObject** InitialReference : Context.InitialNativeReferences)
 		{
 			Dispatcher.HandleKillableReference(*InitialReference, EMemberlessId::InitialReference, EOrigin::Other);
 		}
 
+		// 주요 루프.. 객체 탐색 처리
+		// 처음은 Context.InitialObjects 즉, RootSet을 기반으로 우선 탐색 후 이후 SerializeObject를 탐색한다.
+		// 멤버를 순차적으로 삽입하니 BFS라고 봐도 무방하다. 대신 히트캐시율을 높인..!
 		TConstArrayView<UObject*> CurrentObjects = Context.InitialObjects;
 		while (true)
 		{
 			Context.Stats.AddObjects(CurrentObjects.Num());
+			// CurrentObjects에 담긴 UObject들을 트래버스하여 참조 객체들을 수집하고 Dispathcer가 처리(마킹, 큐에 추가 등)합니다 
 			ProcessObjects(Dispatcher, CurrentObjects);
 
 			// Free finished work block
+			// 작업이 완료된 블럭은 해제해주는 코드. 시작 위치는 살려둔다.
 			if (CurrentObjects.GetData() != Context.InitialObjects.GetData())
 			{
 				Context.ObjectsToSerialize.FreeOwningBlock(CurrentObjects.GetData());
 			}
 
+			// 너무 오랜 시간이 소요되면 중단 후 추후에 처리합니다.
+			// 현재 작업중인걸 모두 비우고 중단합니다.
 			if (Processor.IsTimeLimitExceeded())
 			{
 				FlushWork(Dispatcher);
@@ -897,6 +913,7 @@ StoleARO:
 				else if (Block = RemainingObjects.PopPartialBlock(/* out if successful */ BlockSize); Block);
 				else if (bIsParallel) // if constexpr yields MSVC unreferenced label warning
 				{
+					// 병렬로 작업중이고 다른 스레드에서 일감을 뺏어온다면 상황에 따라 goto 문으로 분기.
 					switch (StealWork(/* in-out */ Context, Collector, /* out */ Block, Options))
 					{
 						case ELoot::Nothing:	break;				// Done, stop working
@@ -906,6 +923,7 @@ StoleARO:
 					}
 				}
 
+				// 더 이상 처리할 블럭이 없다면 종료
 				if (!Block)
 				{
 					break;
@@ -925,6 +943,9 @@ private:
 	
 	ProcessorType& Processor;
 
+	// GarbageCollection - 20 - ProcessObjects  트래버스 하며 참조를 확인하는 코드!!!
+	// 중단점이 걸리지 않습니다. 추후에 인라인을 풀고 디버깅하던지 디버그 모드로 빌드하던지 나중에 더 확인필요합니다.
+	// 여기가 한 오브젝트 단위로 레퍼런스를 파악하는 코드가 있는 곳..!
 	FORCEINLINE_DEBUGGABLE void ProcessObjects(DispatcherType& Dispatcher, TConstArrayView<UObject*> CurrentObjects)
 	{
 		for (FPrefetchingObjectIterator It(CurrentObjects); It.HasMore(); It.Advance())
@@ -942,6 +963,8 @@ private:
 			Dispatcher.Context.ReferencingObject = CurrentObject;
 
 			// Emit base references
+			// 내부적으로 HandleReferenceDirectly라는 함수를 호출하게 되는데 여기서 가비지로 판단된다면 HandleGarbageReference를 호출하게 되고 가비지로 판단되면 Context.GarbageReferences에 저장하게 됨.
+			// HandleReferenceDirectly에서 다음 탐색할 레퍼런스도 추가하게 됨.
 			Dispatcher.HandleImmutableReference(Class, EMemberlessId::Class, EOrigin::Other);
 			Dispatcher.HandleImmutableReference(Outer, EMemberlessId::Outer, EOrigin::Other);
 #if WITH_EDITOR
@@ -953,6 +976,7 @@ private:
 			{
 				typename DispatcherType::SchemaStackScopeType SchemaStack(Dispatcher.Context, Schema);
 				Processor.BeginTimingObject(CurrentObject);
+				// 모든 멤버를 순회하며 방문함.
 				Private::VisitMembers(Dispatcher, Schema, CurrentObject);
 				Processor.UpdateDetailedStats(CurrentObject);
 			}

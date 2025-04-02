@@ -321,6 +321,7 @@ public:
 	 * Mark this object item as Reachable and clear MaybeUnreachable flag. Only thread-safe for concurrent clear, not concurrent set+clear. Don't use during mark phase. For GC use only.
 	 * @return True if this call cleared MaybeUnreachable flag, false if it has been cleared by another thread.
 	 */
+	 // 처음으로 도달 가능으로 바꼈다면 True를 반환한다.
 	FORCEINLINE bool MarkAsReachableInterlocked_ForGC()
 	{
 		using namespace UE::GC;
