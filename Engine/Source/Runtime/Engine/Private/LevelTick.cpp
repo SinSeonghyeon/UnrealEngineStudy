@@ -1697,7 +1697,7 @@ void UWorld::Tick( ELevelTick TickType, float DeltaSeconds )
 
 	{
 		TRACE_CPUPROFILER_EVENT_SCOPE(ConditionalCollectGarbage);
-		// GarbageCollection - Start - 1 매 틱마다 ConditionalCollectGarbage를 호출합니다.
+		// GarbageCollection - 1 - Start  매 틱마다 ConditionalCollectGarbage를 호출합니다.
 		GEngine->ConditionalCollectGarbage();
 	}
 	
