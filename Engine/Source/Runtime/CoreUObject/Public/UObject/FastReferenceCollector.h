@@ -711,7 +711,7 @@ struct TDirectDispatcher
 	FWorkerContext& Context;
 	FReferenceCollector& Collector;
 
-	// GarbageCollection - 21 - HandleReferenceDirectly 여기로 들어오게 된다!!
+	// GarbageCollection - 22 - HandleReferenceDirectly 여기로 들어오게 된다!!
 	FORCEINLINE void HandleReferenceDirectly(UObject* ReferencingObject, UObject*& Object, FMemberId MemberId, EOrigin Origin, bool bAllowReferenceElimination) const
 	{
 		if (IsObjectHandleResolved(*reinterpret_cast<FObjectHandle*>(&Object)))
@@ -837,14 +837,14 @@ COREUOBJECT_API void ProcessAsync(void (*ProcessSync)(void*, FWorkerContext&), v
  *
  * @see FSimpleReferenceProcessorBase and TDefaultCollector for documentation on required APIs
  */
- // GarbageCollection - 19 - TFastReferenceCollector  가비지 컬렉션의 핵심과도 같은 코드입니다. 
- // UObject 그래프를 순회하며 참조 관계를 추적합니다.
+
 template <typename ProcessorType, typename CollectorType>
 class TFastReferenceCollector : public FGCInternals
 {
 public:
 	TFastReferenceCollector(ProcessorType& InProcessor) : Processor(InProcessor) {}
-
+	// GarbageCollection - 20 - ProcessObjectArray  가비지 컬렉션의 핵심과도 같은 코드입니다. 
+	// UObject 그래프를 순회하며 참조 관계를 추적합니다.
 	void ProcessObjectArray(FWorkerContext& Context)
 	{
 		// 현재 컨텍스트의 상태를 기록합니다.
@@ -943,7 +943,7 @@ private:
 	
 	ProcessorType& Processor;
 
-	// GarbageCollection - 20 - ProcessObjects  트래버스 하며 참조를 확인하는 코드!!!
+	// GarbageCollection - 21 - ProcessObjects  트래버스 하며 참조를 확인하는 코드!!!
 	// 중단점이 걸리지 않습니다. 추후에 인라인을 풀고 디버깅하던지 디버그 모드로 빌드하던지 나중에 더 확인필요합니다.
 	// 여기가 한 오브젝트 단위로 레퍼런스를 파악하는 코드가 있는 곳..!
 	FORCEINLINE_DEBUGGABLE void ProcessObjects(DispatcherType& Dispatcher, TConstArrayView<UObject*> CurrentObjects)
