@@ -1888,15 +1888,13 @@ void UEngine::ConditionalCollectGarbage()
 						&& (TimeSinceLastPendingKillPurge > TimeBetweenPurgingPendingKillObjects) && TimeBetweenPurgingPendingKillObjects > 0.f)
 					{
 						SCOPE_CYCLE_COUNTER(STAT_GCMarkTime);
-						// Mark와 Sweep이 별도로 동작한다? 이건 몰랐습니다.
-						// 흠 함수 이름을 봤을 땐 mark 와 sweep이 한번에 동작할 것 같은데요..
+						// 내부적으로 Mark와 Sweep을 모두 실행하고 있습니다.
 						PerformGarbageCollectionAndCleanupActors();
 					}
 					else
 					{
 						SCOPE_CYCLE_COUNTER(STAT_GCSweepTime);
-						// Mark와 Sweep이 별도로 동작한다? 이건 몰랐습니다.
-						// Sweep은 Mark를 할때가 아니라면 항상 호출됩니다.
+						// Sweep 단계는 매 프레임 호출되고 있습니다. 하지만 수집된 Unreachable이 없어 별다른 동작 없이 종료됩니다.
 						float IncGCTime = GIncrementalGCTimePerFrame;
 						if (GLowMemoryMemoryThresholdMB > 0.0)
 						{
