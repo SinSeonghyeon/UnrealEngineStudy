@@ -1,0 +1,45 @@
+앞으로 소스코드가 변경된 것이 없을 때는 작업일지로 대체하겠습니다.
+
+오늘은 아래 링크의 강의를 보며 강의를 위한 프로젝트 세팅 진행하였습니다.
+https://www.inflearn.com/course/%EC%9D%B4%EB%93%9D%EC%9A%B0-%EC%96%B8%EB%A6%AC%EC%96%BC-%ED%94%84%EB%A1%9C%EA%B7%B8%EB%9E%98%EB%B0%8D-part-3
+
+언리얼 리슨서버를 사용한 네트워크 프로그래밍 강의 개요였고 앞으로 계속 수강할 예정입니다.
+
+진행한 내용을 요약하면 아래와 같습니다.
+
+이번 강의를 통해 완성해나갈 PvP 게임 예제의 소개와 에디터 설정
+editor preferences -> allow late joining 활성화
+플레이 설정 -> Net Mode -> PlayAsListen Server
+이후 플레이어 플레이 도중 추가 가능
+
+
+
+클라이언트-서버 모델의 구성 이해 
+https://dev.epicgames.com/documentation/ko-kr/unreal-engine/networking-overview-for-unreal-engine
+해당 문서를 읽어줌. 프로젝트 진행 후 다시 정독 필요!!
+- 1강 28분쯤 다른 방식으로 또 설명함.
+
+
+
+언리얼 엔진의 네트웍 멀티플레이어 프레임웍을 구성하는 주요 개념의 학습
+어플리케이션 - 게임인스턴스, 월드, 네트웍모드
+(Application)
+접속 플로우 - 로그인, 커넥션, 오너십, 역할ㅇ
+(Connection Flow)
+액터 리플리케이션 - 연관성, 우선권, 빈도
+(Actor Replication)
+RPC - 신뢰성, 검증
+(Remote Procedure Call)
+움직임 리플리케이션 - 캐릭터, 물리
+(Movement Replication)
+프로퍼티 리플리케이션 - 상태, 최적화
+(Property Replication)
+
+
+
+
+언리얼 c++ 프로그래밍이 가지는 장점의 이해입니다.
+필수적으로 사용되는 가상 함수의 활용 가능
+제대로 된 리플리케이션 콜백의 호출 가능
+리플리케이션 조건의 세밀한 제어 가능
+네트워크 전송 최적화:가벼운 데이터 설계
