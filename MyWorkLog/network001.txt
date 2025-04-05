@@ -1,0 +1,25 @@
+2강부터 8강까지 강의 진행하였습니다.
+게임 모드와 로그인
+커넥션과 오너십
+액터의 역할과 커넥션 핸드셰이킹
+액터 리플리케이션 기초
+액터 리플리케이션 빈도와 연관성
+액터 리플리케이션 로우레벨 플로우
+RPC 기초
+
+위 항목들에 대해 살펴보았고 아래 공식 문서를 참조하여 강의 진행되었습니다.
+
+https://dev.epicgames.com/documentation/ko-kr/unreal-engine/detailed-actor-replication-flow-in-unreal-engine
+https://dev.epicgames.com/documentation/ko-kr/unreal-engine/networking-overview-for-unreal-engine
+https://dev.epicgames.com/documentation/ko-kr/unreal-engine/replicated-object-execution-order-in-unreal-engine
+https://dev.epicgames.com/documentation/ko-kr/unreal-engine/actor-owner-and-owning-connection-in-unreal-engine
+https://dev.epicgames.com/documentation/ko-kr/unreal-engine/actor-network-dormancy-in-unreal-engine
+https://dev.epicgames.com/documentation/ko-kr/unreal-engine/actor-priority-in-unreal-engine
+https://dev.epicgames.com/documentation/ko-kr/unreal-engine/actor-relevancy-in-unreal-engine
+https://dev.epicgames.com/documentation/ko-kr/unreal-engine/remote-procedure-calls-in-unreal-engine
+https://dev.epicgames.com/documentation/ko-kr/unreal-engine/setting-up-dedicated-servers-in-unreal-engine
+
+이해가 안가는 부분이 종종 있었으나 우선 빠르게 전체를 훑어보고 이해가 안됐던 
+강의나 암기가 필요한 강의는 다시 살펴볼 계획입니다.
+
+사실 2강부터 8강 모두 이론적인 부분이 많았기에 대부분 다시 살펴봐야할 것 같습니다.
