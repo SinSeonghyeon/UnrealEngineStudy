@@ -1,0 +1,28 @@
+// Fill out your copyright notice in the Description page of Project Settings.
+
+
+#include "NGPropBase.h"
+
+
+// Sets default values
+ANGPropBase::ANGPropBase()
+{
+ 	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
+	PrimaryActorTick.bCanEverTick = true;
+
+}
+
+// Called when the game starts or when spawned
+void ANGPropBase::BeginPlay()
+{
+	Super::BeginPlay();
+	
+}
+
+// Called every frame
+void ANGPropBase::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+
+}
+
