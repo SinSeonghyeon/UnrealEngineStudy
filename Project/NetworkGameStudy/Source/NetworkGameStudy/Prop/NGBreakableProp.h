@@ -19,10 +19,39 @@ protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
-public:	
-	// Called every frame
-	virtual void Tick(float DeltaTime) override;
 
+public:
+	virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) override;
+
+
+private:
+	void BreakProp();
+
+	void ShakeProp();
 	
-	
+	UFUNCTION(NetMulticast, UnReliable)
+	void MulticastRPCShakeProp();
+
+protected:
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Prop, meta = (AllowPrivateAccess = "true"))
+	UStaticMeshComponent* PropMesh;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Prop, meta = (AllowPrivateAccess = "true"))
+	int32 CurrentHP;
+
+private:
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Prop, meta = (AllowPrivateAccess = "true"))
+	float ShakeTimeRemaining = 3.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Prop, meta = (AllowPrivateAccess = "true"))
+	float ShakeSpeed = 1.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Prop, meta = (AllowPrivateAccess = "true"))
+	float ShakeStrength = 1.0f;
+
+	float CurrentShakeTimeRemaining = 3.0f;
+
+	FTimerHandle ShakeHandle;
+
+	FRotator OriginalRotation;
 };

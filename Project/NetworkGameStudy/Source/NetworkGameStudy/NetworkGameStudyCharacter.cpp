@@ -14,6 +14,8 @@
 #include "../../../../Engine/Source/Runtime/Engine/Public/EngineUtils.h"
 #include "GameFramework/GameStateBase.h"
 #include "NetworkGameStudy.h"
+#include "../../../../Engine/Source/Runtime/Engine/Classes/Engine/OverlapResult.h"
+#include "../../../../Engine/Source/Runtime/Engine/Classes/Engine/DamageEvents.h"
 
 DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 
@@ -173,7 +175,7 @@ void ANetworkGameStudyCharacter::Attack(const FInputActionValue& Value)
 		CachedAnimInstance->PlayAttackMontage();
 
 		// 공격을 했다는 사실을 서버에 알립니다.
-		ServerRPCAttack(GetWorld()->GetGameState()->GetServerWorldTimeSeconds());
+		ServerRPCAttack_PlayAnim(GetWorld()->GetGameState()->GetServerWorldTimeSeconds());
 	}
 }
 
@@ -182,9 +184,35 @@ void ANetworkGameStudyCharacter::ResetAttack()
 	bCanAttack = true;
 }
 
-void ANetworkGameStudyCharacter::ServerRPCAttack_Implementation(float AttackStartTime)
+void ANetworkGameStudyCharacter::ServerRPCAttack_HitCheck_Implementation(FVector StartPos, float Radius)
+{
+	TArray<FOverlapResult> HitResults;
+
+	float Damage = 30.0f;
+	FDamageEvent DamageEvent;
+
+	bool bHit = GetWorld()->OverlapMultiByObjectType(HitResults, StartPos, FQuat::Identity, FCollisionObjectQueryParams::AllObjects, FCollisionShape::MakeSphere(Radius));
+
+	// 클라에 던져주나?
+	DrawDebugSphere(GetWorld(), StartPos, Radius, 18, FColor::Red, false, 1.0f);
+
+	if (bHit)
+	{
+		for (const FOverlapResult& Hit : HitResults)
+		{
+			AActor* HitActor = Hit.GetActor();
+			if (this != HitActor)
+			{
+				HitActor->TakeDamage(Damage, DamageEvent, this->GetController(), this);
+			}
+		}
+	}
+}
+
+void ANetworkGameStudyCharacter::ServerRPCAttack_PlayAnim_Implementation(float AttackStartTime)
 {
 	LastAttackStartTime = AttackStartTime;
+
 	// 자신을 제외한 나머지 플레이어에게 애니메이션 재생 RPC를 던집니다.
 	for (APlayerController* PlayerController : TActorRange<APlayerController>(GetWorld()))
 	{
@@ -194,14 +222,13 @@ void ANetworkGameStudyCharacter::ServerRPCAttack_Implementation(float AttackStar
 			ANetworkGameStudyCharacter* OtherPlayer = Cast<ANetworkGameStudyCharacter>(PlayerController->GetPawn());
 			if (OtherPlayer)
 			{
-				OtherPlayer->ClientRPCPlayAttackAnimation(this);
+				OtherPlayer->ClientRPCPlayAttack_PlayAnim(this);
 			}
 		}
 	}
-
 }
 
-bool ANetworkGameStudyCharacter::ServerRPCAttack_Validate(float AttackStartTime)
+bool ANetworkGameStudyCharacter::ServerRPCAttack_PlayAnim_Validate(float AttackStartTime)
 {
 	if (LastAttackStartTime == 0.0f)
 	{
@@ -211,7 +238,7 @@ bool ANetworkGameStudyCharacter::ServerRPCAttack_Validate(float AttackStartTime)
 	return (AttackStartTime - LastAttackStartTime) > (AttackTime - 0.4f);
 }
 
-void ANetworkGameStudyCharacter::ClientRPCPlayAttackAnimation_Implementation(ANetworkGameStudyCharacter* CharacterToPlay)
+void ANetworkGameStudyCharacter::ClientRPCPlayAttack_PlayAnim_Implementation(ANetworkGameStudyCharacter* CharacterToPlay)
 {
 	NG_LOG(LogNGNetwork, Log, TEXT("Begin"));
 

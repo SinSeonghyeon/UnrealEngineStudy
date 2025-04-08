@@ -47,10 +47,15 @@ protected:
 
 	// -------------- RPC --------------------
 	UFUNCTION(Server, Reliable, WithValidation)
-	void ServerRPCAttack(float AttackStartTime);
+	void ServerRPCAttack_PlayAnim(float AttackStartTime);
 
 	UFUNCTION(Client, Reliable)
-	void ClientRPCPlayAttackAnimation(ANetworkGameStudyCharacter* CharacterToPlay);
+	void ClientRPCPlayAttack_PlayAnim(ANetworkGameStudyCharacter* CharacterToPlay);
+
+public:
+	UFUNCTION(Server, Reliable)
+	void ServerRPCAttack_HitCheck(FVector StartPos, float Radius);
+
 protected:
 	// APawn interface
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;

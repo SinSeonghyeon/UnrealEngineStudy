@@ -9,10 +9,13 @@
 #define LOG_REMOTEROLEINFO *(UEnum::GetValueAsString(TEXT("Engine.ENetRole"), GetRemoteRole()))
 #define LOG_SUBLOCALROLEINFO *(UEnum::GetValueAsString(TEXT("Engine.ENetRole"), GetOwner()->GetLocalRole()))
 #define LOG_SUBREMOTEROLEINFO *(UEnum::GetValueAsString(TEXT("Engine.ENetRole"), GetOwner()->GetRemoteRole()))
+#define LOG_OWNERLOCALROLEINFO(Owner) *(UEnum::GetValueAsString(TEXT("Engine.ENetRole"), Owner->GetLocalRole()))
+#define LOG_OWNERREMOTEROLEINFO(Owner) *(UEnum::GetValueAsString(TEXT("Engine.ENetRole"), Owner->GetRemoteRole()))
 
 #define LOG_NETMODEINFO ((GetNetMode() == ENetMode::NM_Client) ? *FString::Printf(TEXT("CLIENT%d"), GPlayInEditorID) : ((GetNetMode() == ENetMode::NM_Standalone) ? TEXT("STANDALONE") : TEXT("SERVER"))) 
 #define LOG_CALLINFO ANSI_TO_TCHAR(__FUNCTION__)
 #define NG_LOG(LogCat, Verbosity, Format, ...) UE_LOG(LogCat, Verbosity, TEXT("[%s][%s/%s] %s %s"), LOG_NETMODEINFO, LOG_LOCALROLEINFO, LOG_REMOTEROLEINFO, LOG_CALLINFO, *FString::Printf(Format, ##__VA_ARGS__))
+#define NG_OWNERLOG(LogCat, Verbosity, Owner, Format, ...) UE_LOG(LogCat, Verbosity, TEXT("[%s][%s/%s] %s %s"), LOG_NETMODEINFO, LOG_OWNERLOCALROLEINFO(Owner), LOG_OWNERREMOTEROLEINFO(Owner), LOG_CALLINFO, *FString::Printf(Format, ##__VA_ARGS__))
 #define NG_SUBLOG(LogCat, Verbosity, Format, ...) UE_LOG(LogCat, Verbosity, TEXT("[%s][%s/%s] %s %s"), LOG_NETMODEINFO, LOG_SUBLOCALROLEINFO, LOG_SUBREMOTEROLEINFO, LOG_CALLINFO, *FString::Printf(Format, ##__VA_ARGS__))
 
 DECLARE_LOG_CATEGORY_EXTERN(LogNGNetwork, Log, All);
