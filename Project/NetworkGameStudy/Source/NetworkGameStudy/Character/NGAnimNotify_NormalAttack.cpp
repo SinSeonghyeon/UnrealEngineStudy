@@ -10,7 +10,10 @@ void UNGAnimNotify_NormalAttack::Notify(USkeletalMeshComponent* MeshComp, UAnimS
 	ANetworkGameStudyCharacter* Owner = Cast<ANetworkGameStudyCharacter>(MeshComp->GetOwner());
 	if (!Owner) return;
 
-	FVector Start = Owner->GetActorLocation() + Owner->GetActorForwardVector() * 100.f;
+	if (Owner->GetLocalRole() == ENetRole::ROLE_AutonomousProxy)
+	{
+		FVector Start = Owner->GetActorLocation() + Owner->GetActorForwardVector() * 100.f;
 
-	Owner->ServerRPCAttack_HitCheck(Start, AttackRange);
+		Owner->ServerRPCAttack_HitCheck(Start, AttackRange);
+	}
 }

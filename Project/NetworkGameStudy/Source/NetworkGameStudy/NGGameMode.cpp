@@ -1,10 +1,10 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
-#include "NetworkGameStudyGameMode.h"
+#include "NGGameMode.h"
 #include "NetworkGameStudyCharacter.h"
 #include "UObject/ConstructorHelpers.h"
 
-ANetworkGameStudyGameMode::ANetworkGameStudyGameMode()
+ANGGameMode::ANGGameMode()
 {
 	// set default pawn class to our Blueprinted character
 	static ConstructorHelpers::FClassFinder<APawn> PlayerPawnBPClass(TEXT("/Game/ThirdPerson/Blueprints/BP_ThirdPersonCharacter"));

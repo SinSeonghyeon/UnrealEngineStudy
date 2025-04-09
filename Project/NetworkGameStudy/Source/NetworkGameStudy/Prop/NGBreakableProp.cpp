@@ -3,6 +3,7 @@
 
 #include "NGBreakableProp.h"
 #include "../NetworkGameStudy.h"
+#include "../Item/NGDropItemActor.h"
 
 // Sets default values
 ANGBreakableProp::ANGBreakableProp()
@@ -11,7 +12,7 @@ ANGBreakableProp::ANGBreakableProp()
 
 	PropMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("PropMesh"));
 	PropMesh->SetupAttachment(RootComponent);
-	
+
 	bReplicates = true;
 }
 
@@ -19,7 +20,7 @@ ANGBreakableProp::ANGBreakableProp()
 void ANGBreakableProp::BeginPlay()
 {
 	Super::BeginPlay();
-	
+
 	OriginalRotation = GetActorRotation();
 	CurrentShakeTimeRemaining = ShakeTimeRemaining;
 }
@@ -27,6 +28,20 @@ void ANGBreakableProp::BeginPlay()
 void ANGBreakableProp::BreakProp()
 {
 	NG_LOG(LogNGNetwork, Log, TEXT("Begin"));
+
+	UWorld* World = GetWorld();
+	if (!World) return;
+
+	FVector SpawnLocation = GetActorLocation() + FMath::VRand() * 30.f + FVector(0.0f, 100.0f, 0.0f);
+	FRotator SpawnRotation = FRotator::ZeroRotator;
+
+	ANGDropItemActor* Dropped = World->SpawnActor<ANGDropItemActor>(ANGDropItemActor::StaticClass(), SpawnLocation, SpawnRotation);
+	Dropped->Initialize(TEXT("000"));
+
+	if (Dropped)
+	{
+		UE_LOG(LogTemp, Log, TEXT("Dropped item: %s"), *Dropped->GetName());
+	}
 }
 
 void ANGBreakableProp::ShakeProp()

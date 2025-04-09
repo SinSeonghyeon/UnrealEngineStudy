@@ -4,15 +4,15 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/GameModeBase.h"
-#include "NetworkGameStudyGameMode.generated.h"
+#include "NGGameMode.generated.h"
 
 UCLASS(minimalapi)
-class ANetworkGameStudyGameMode : public AGameModeBase
+class ANGGameMode : public AGameModeBase
 {
 	GENERATED_BODY()
 
 public:
-	ANetworkGameStudyGameMode();
+	ANGGameMode();
 };
 
 

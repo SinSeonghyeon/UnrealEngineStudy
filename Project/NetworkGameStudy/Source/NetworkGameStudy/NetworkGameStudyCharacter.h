@@ -108,7 +108,6 @@ private:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	UInputAction* AttackAction;
 
-
 	// 무기 스켈레탈 메시 컴포넌트
 	UPROPERTY(Transient)
 	USkeletalMeshComponent* WeaponMeshComponent;

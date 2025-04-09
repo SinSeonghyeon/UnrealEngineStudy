@@ -39,6 +39,9 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Prop, meta = (AllowPrivateAccess = "true"))
 	int32 CurrentHP;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Prop, meta = (AllowPrivateAccess = "true"))
+	TArray<FName> DropTimeIDs;
+
 private:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Prop, meta = (AllowPrivateAccess = "true"))
 	float ShakeTimeRemaining = 3.0f;
