@@ -18,8 +18,8 @@ struct FItemData : public FTableRowBase
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     FText ItemName;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Mesh")
-	UStaticMesh* StaticMesh;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    TSubclassOf<class ANGDropItemActor> DropActorClass;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     UTexture2D* Icon;

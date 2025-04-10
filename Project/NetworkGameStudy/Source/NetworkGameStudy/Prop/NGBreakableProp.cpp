@@ -4,6 +4,9 @@
 #include "NGBreakableProp.h"
 #include "../NetworkGameStudy.h"
 #include "../Item/NGDropItemActor.h"
+#include "../NGGameInstance.h"
+#include "../Item/ItemData.h"
+#include "GeometryCollection/GeometryCollectionComponent.h"
 
 // Sets default values
 ANGBreakableProp::ANGBreakableProp()
@@ -12,6 +15,14 @@ ANGBreakableProp::ANGBreakableProp()
 
 	PropMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("PropMesh"));
 	PropMesh->SetupAttachment(RootComponent);
+
+	DestructibleMesh = CreateDefaultSubobject<UGeometryCollectionComponent>(TEXT("GeometryCollectionComponent"));
+	DestructibleMesh->SetCollisionProfileName(TEXT("Breakable"));
+	DestructibleMesh->AttachToComponent(PropMesh, FAttachmentTransformRules::KeepRelativeTransform);
+	DestructibleMesh->SetSimulatePhysics(false);
+	DestructibleMesh->SetVisibility(false);
+	DestructibleMesh->DamageThreshold.Empty();
+	DestructibleMesh->DamageThreshold.Add(0);
 
 	bReplicates = true;
 }
@@ -32,11 +43,15 @@ void ANGBreakableProp::BreakProp()
 	UWorld* World = GetWorld();
 	if (!World) return;
 
-	FVector SpawnLocation = GetActorLocation() + FMath::VRand() * 30.f + FVector(0.0f, 100.0f, 0.0f);
+	FVector SpawnLocation = GetActorLocation() + FMath::VRand() * 100.f + FVector(0.0f, 0.0f, FMath::FRandRange(100.f, 200.f));
 	FRotator SpawnRotation = FRotator::ZeroRotator;
 
-	ANGDropItemActor* Dropped = World->SpawnActor<ANGDropItemActor>(ANGDropItemActor::StaticClass(), SpawnLocation, SpawnRotation);
-	Dropped->Initialize(TEXT("000"));
+	const FItemData* ItemData = UNGGameInstance::GetItemDataTableManager(this)->GetItemData(DropTimeIDs[FMath::RandRange(0, DropTimeIDs.Num() - 1)]);
+
+	ANGDropItemActor* Dropped = World->SpawnActor<ANGDropItemActor>(ItemData->DropActorClass, SpawnLocation, SpawnRotation);
+	
+	MulticastRPCDestroyMesh();
+	
 
 	if (Dropped)
 	{
@@ -71,13 +86,31 @@ void ANGBreakableProp::ShakeProp()
 	}
 }
 
+void ANGBreakableProp::DestroyActor()
+{
+	Destroy();
+}
+
+void ANGBreakableProp::MulticastRPCDestroyMesh_Implementation()
+{
+	PropMesh->SetVisibility(false);
+	// PropMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+	DestructibleMesh->SetVisibility(true);
+	DestructibleMesh->SetSimulatePhysics(true);
+	DestructibleMesh->AddForce(FVector(0.0f, 0.0f, -1.0f));
+
+	// 서버로 옮겨줘야함. 테스트를 위해 추가.
+	GetWorldTimerManager().SetTimer(DestroyTimerHandle, this, &ANGBreakableProp::DestroyActor, 1.0f, false);
+}
+
 void ANGBreakableProp::MulticastRPCShakeProp_Implementation()
 {
 	// AttackTime 후에 공격 가능 여부를 초기화 시킵니다.
 	GetWorldTimerManager().SetTimer(ShakeHandle, this, &ANGBreakableProp::ShakeProp, 0.016f, true);
 }
 
-// 해당 코드는 서버에서 실행될 예정입니다.
+// 해당 코드는 서버에서 실행되고 있습니다!!
 float ANGBreakableProp::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
 {
 	NG_LOG(LogNGNetwork, Log, TEXT("Begin"));

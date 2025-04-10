@@ -6,12 +6,14 @@
 #include "GameFramework/Actor.h"
 #include "NGBreakableProp.generated.h"
 
+class UGeometryCollectionComponent;
+
 UCLASS()
 class NETWORKGAMESTUDY_API ANGBreakableProp : public AActor
 {
 	GENERATED_BODY()
-	
-public:	
+
+public:
 	// Sets default values for this actor's properties
 	ANGBreakableProp();
 
@@ -28,9 +30,17 @@ private:
 	void BreakProp();
 
 	void ShakeProp();
-	
+
+	void DestroyActor();
+
+	// 메쉬가 파괴되는 연출을 호출합니다.
+	UFUNCTION(NetMulticast, UnReliable)
+	void MulticastRPCDestroyMesh();
+
 	UFUNCTION(NetMulticast, UnReliable)
 	void MulticastRPCShakeProp();
+
+
 
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Prop, meta = (AllowPrivateAccess = "true"))
@@ -41,6 +51,9 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Prop, meta = (AllowPrivateAccess = "true"))
 	TArray<FName> DropTimeIDs;
+		
+	UPROPERTY(EditAnywhere)
+	UGeometryCollectionComponent* DestructibleMesh;
 
 private:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Prop, meta = (AllowPrivateAccess = "true"))
@@ -54,7 +67,9 @@ private:
 
 	float CurrentShakeTimeRemaining = 3.0f;
 
+	FRotator OriginalRotation;
+
 	FTimerHandle ShakeHandle;
 
-	FRotator OriginalRotation;
+	FTimerHandle DestroyTimerHandle;
 };

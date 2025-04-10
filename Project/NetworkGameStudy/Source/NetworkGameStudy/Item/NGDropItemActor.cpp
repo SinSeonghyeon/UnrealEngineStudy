@@ -5,7 +5,7 @@
 #include "../NGGameInstance.h"
 #include "ItemData.h"
 #include "Net/UnrealNetwork.h"
-
+#include "../NetworkGameStudy.h"
 // Sets default values
 ANGDropItemActor::ANGDropItemActor()
 {
@@ -15,34 +15,19 @@ ANGDropItemActor::ANGDropItemActor()
 	MeshComponent->SetCollisionProfileName(TEXT("DropActor"));
 	MeshComponent->SetSimulatePhysics(true);
 
+
 	RootComponent = MeshComponent;
 
 	bReplicates = true;
-}
-
-void ANGDropItemActor::Initialize(FName InItemID)
-{
-	ItemID = InItemID;
-
-	const FItemData* ItemData = UNGGameInstance::GetItemDataTableManager(this)->GetItemData(ItemID);
-	if (ItemData)
-	{
-		UE_LOG(LogTemp, Log, TEXT("Loaded item: %s"), *ItemData->ItemName.ToString());
-
-		ReplicatedMesh = ItemData->StaticMesh;
-		// 서버에도 메시를 반영하기 위함.
-		// OnRep_MeshChanged();
-	}
-	else
-	{
-		UE_LOG(LogTemp, Error, TEXT("ItemID '%s' not found in DataTable."), *ItemID.ToString());
-	}
 }
 
 // Called when the game starts or when spawned
 void ANGDropItemActor::BeginPlay()
 {
 	Super::BeginPlay();
+
+	MeshComponent->OnComponentBeginOverlap.AddDynamic(this, &ANGDropItemActor::OnMeshOverlapBegin);
+	MeshComponent->OnComponentEndOverlap.AddDynamic(this, &ANGDropItemActor::OnMeshOverlapEnd);
 }
 
 void ANGDropItemActor::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -52,6 +37,15 @@ void ANGDropItemActor::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Out
 	DOREPLIFETIME(ANGDropItemActor, ReplicatedMesh);
 }
 
+void ANGDropItemActor::OnMeshOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+{
+	NG_LOG(LogTemp, Log, TEXT("OverlapBegin"));
+}
+
+void ANGDropItemActor::OnMeshOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
+{
+	NG_LOG(LogTemp, Log, TEXT("OverlapEnd"));
+}
 
 void ANGDropItemActor::OnRep_MeshChanged()
 {
