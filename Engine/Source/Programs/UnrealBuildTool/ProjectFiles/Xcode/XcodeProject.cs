@@ -1786,7 +1786,7 @@ namespace UnrealBuildTool.XcodeProjectXcconfig
 				SDKRoot = "macosx";
 				SupportedPlatforms = "macosx";
 				DeploymentTargetKey = "MACOSX_DEPLOYMENT_TARGET";
-				DeploymentTarget = MacToolChain.Settings.MacOSVersion;
+				DeploymentTarget = MacToolChain.Settings.MinMacDeploymentVersion(UnrealData.TargetRules.Type);
 				BundleIdentifier = bIsEditor ? "com.epicgames.UnrealEditor" : UnrealData.BundleIdentifier;
 
 				// @todo: get a version for  games, like IOS has
@@ -2067,8 +2067,14 @@ namespace UnrealBuildTool.XcodeProjectXcconfig
 
 					ConfigXcconfig.AppendLine($"PRODUCT_NAME_ = {ProductName}");
 					ConfigXcconfig.AppendLine($"PRODUCT_NAME_build = $(PRODUCT_NAME_)");
-					string ArchivedName = ApplicationDisplayName ?? (UnrealData.UProjectFileLocation == null ? ProductName : UnrealData.UProjectFileLocation!.GetFileNameWithoutAnyExtensions());
-					ConfigXcconfig.AppendLine($"PRODUCT_NAME_install = {ArchivedName}");
+					if (String.IsNullOrEmpty(ApplicationDisplayName))
+					{
+						ConfigXcconfig.AppendLine($"PRODUCT_NAME_install = {(UnrealData.UProjectFileLocation == null ? ProductName : UnrealData.UProjectFileLocation!.GetFileNameWithoutAnyExtensions())}");
+					}
+					else
+					{
+						ConfigXcconfig.AppendLine($"PRODUCT_NAME_install = {ApplicationDisplayName}");
+					}
 
 					// this will choose the proper PRODUCT_NAME when archiving vs normal building
 					ConfigXcconfig.AppendLine("PRODUCT_NAME = $(PRODUCT_NAME_$(ACTION))");
@@ -2653,7 +2659,7 @@ namespace UnrealBuildTool.XcodeProjectXcconfig
 
 					// the Build target used some ini settings to compile, and Run target must match, so we override a few settings, at
 					// whatever level they were already specified at (Projet and/or Target)
-					XcodeUtils.PlistSetUpdate($":objects:{ConfigGuid}:buildSettings:MACOSX_DEPLOYMENT_TARGET", MacToolChain.Settings.MacOSVersion);
+					XcodeUtils.PlistSetUpdate($":objects:{ConfigGuid}:buildSettings:MACOSX_DEPLOYMENT_TARGET", MacToolChain.Settings.MinMacDeploymentVersion(UnrealData.TargetRules.Type));
 					if (UnrealData.IOSProjectSettings != null)
 					{
 						XcodeUtils.PlistSetUpdate($":objects:{ConfigGuid}:buildSettings:IPHONEOS_DEPLOYMENT_TARGET", UnrealData.IOSProjectSettings.RuntimeVersion);

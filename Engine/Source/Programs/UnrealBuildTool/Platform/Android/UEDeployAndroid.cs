@@ -3024,10 +3024,10 @@ namespace UnrealBuildTool
 
 			// Required for OBB download support
 			Text.AppendLine("\t\t<service android:name=\"OBBDownloaderService\" />");
-			Text.AppendLine("\t\t<receiver android:name=\"AlarmReceiver\" />");
+			Text.AppendLine("\t\t<receiver android:name=\"AlarmReceiver\" android:exported=\"false\"/>");
 
-			Text.AppendLine("\t\t<receiver android:name=\"com.epicgames.unreal.LocalNotificationReceiver\" />");
-			Text.AppendLine("\t\t<receiver android:name=\"com.epicgames.unreal.CellularReceiver\" />");
+			Text.AppendLine("\t\t<receiver android:name=\"com.epicgames.unreal.LocalNotificationReceiver\" android:exported=\"false\"/>");
+			Text.AppendLine("\t\t<receiver android:name=\"com.epicgames.unreal.CellularReceiver\" android:exported=\"false\"/>");
 
 			if (bRestoreNotificationsOnReboot)
 			{
@@ -4959,7 +4959,7 @@ namespace UnrealBuildTool
 					AFSToken = string.IsNullOrEmpty(AFSToken) ? "" : " -k " + AFSToken;
 
 					string AFSExecutable = Path.Combine(Unreal.EngineDirectory.ToString(), @"Binaries/DotNET/Android/UnrealAndroidFileTool", GetAFSExecutable(UnrealTargetPlatform.Win64, Logger));
-					string AFS = $"{AFSExecutable} -p {PackageName}{AFSToken}";
+					string AFSArguments = $"-p {PackageName}{AFSToken}";
 
 					string? SOPushScriptLocation = Path.GetDirectoryName(FinalSOName)!;
 
@@ -4968,7 +4968,8 @@ namespace UnrealBuildTool
 					// MakeApk will not be called in bDontBundleLibrariesInAPK mode, so we need to run stripping outside of it
 					string SOPushScript = @$"
 set ADB=adb
-set AFS={AFS.Replace("/", "\\")}
+set AFS={AFSExecutable.Replace("/", "\\")}
+set AFSARGS={AFSArguments}
 set DEVICE=
 if not \""%1\""==\""\"" set DEVICE=-s %1
 pushd %~dp0
@@ -4976,7 +4977,7 @@ pushd %~dp0
 					if (bUseAFS)
 					{
 						SOPushScript += @$"
-%AFS% %DEVICE% push {FinalSONameStrippedRelative} ""^int/libUnreal.so""
+%AFS% %DEVICE% %AFSARGS% push {FinalSONameStrippedRelative} ""^int/libUnreal.so""
 if ""%ERRORLEVEL%"" NEQ ""0"" (exit /b %ERRORLEVEL%)
 ";
 					}
@@ -5832,7 +5833,7 @@ popd
 			SavePackageInfo(ProjectName, ProjectDirectory.FullName, Type, bSkipGradleBuild);
 
 			MakeApk(ToolChain, ProjectName, Type, ProjectDirectory.FullName, ExecutablePath, EngineDirectory, bForDistribution: bForDistribution, CookFlavor: CookFlavor, Configuration: Configuration,
-				bMakeSeparateApks: ShouldMakeSeparateApks(), bIncrementalPackage: false, bDisallowPackagingDataInApk: bIsDataDeploy, bDisallowExternalFilesDir: !bForDistribution || bIsDataDeploy,
+				bMakeSeparateApks: ShouldMakeSeparateApks(), bIncrementalPackage: false, bDisallowPackagingDataInApk: bIsDataDeploy, bDisallowExternalFilesDir: bIsDataDeploy,
 				bSkipGradleBuild: bSkipGradleBuild, bIsArchive: bIsArchive, bIsFromUAT: true);
 			return true;
 		}

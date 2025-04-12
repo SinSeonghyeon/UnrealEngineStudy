@@ -1160,17 +1160,16 @@ void UMovieSceneSequencePlayer::UpdateTimeCursorPosition_Internal(FFrameTime New
 	if (!PauseRange.IsSet() && Method == EUpdatePositionMethod::Play && ShouldStopOrLoop(NewPosition))
 	{
 		// The actual start time taking into account reverse playback
-		FFrameNumber StartTimeWithReversed = bReversePlayback ? GetLastValidTime().FrameNumber : StartTime;
+		FFrameTime StartTimeWithReversed = bReversePlayback ? GetLastValidTime() : StartTime;
 
 		// The actual end time taking into account reverse playback
-		FFrameTime EndTimeWithReversed = bReversePlayback ? StartTime : GetLastValidTime().FrameNumber;
+		FFrameTime EndTimeWithReversed = bReversePlayback ? StartTime : GetLastValidTime();
 
 		// Operate in tick resolution (for subframes)
-		FFrameTime PositionRelativeToStart = ConvertFrameTime(NewPosition.FrameNumber - StartTimeWithReversed, PlayPosition.GetInputRate(), PlayPosition.GetOutputRate());
-		FFrameTime DurationWithSubFrames = ConvertFrameTime(GetDuration().Time, PlayPosition.GetInputRate(), PlayPosition.GetOutputRate());
+		const double DurationWithSubFrames   = FMath::Max<double>(UE_SMALL_NUMBER, GetDuration().Time.AsDecimal());
+		const double PositionRelativeToStart = (NewPosition - StartTimeWithReversed).AsDecimal();
 
-		const int32 ClampedDurationWithSubFrames = FMath::Max(1, DurationWithSubFrames.FrameNumber.Value);
-		const int32 NumTimesLooped    = FMath::Abs(PositionRelativeToStart.FrameNumber.Value / ClampedDurationWithSubFrames);
+		const int32 NumTimesLooped    = FMath::Abs(FMath::TruncToInt32(PositionRelativeToStart / DurationWithSubFrames));
 		const bool  bLoopIndefinitely = PlaybackSettings.LoopCount.Value < 0;
 
 		// loop playback
@@ -1194,7 +1193,7 @@ void UMovieSceneSequencePlayer::UpdateTimeCursorPosition_Internal(FFrameTime New
 				UpdateMovieSceneInstance(Range, StatusOverride);
 			}
 
-			const FFrameTime Overplay = FFrameTime(ConvertFrameTime(PositionRelativeToStart.FrameNumber.Value % ClampedDurationWithSubFrames, PlayPosition.GetOutputRate(), PlayPosition.GetInputRate()).FrameNumber, PositionRelativeToStart.GetSubFrame());
+			const FFrameTime Overplay = FFrameTime::FromDecimal(FMath::Fmod(PositionRelativeToStart, DurationWithSubFrames));
 			FFrameTime NewFrameOffset;
 			
 			if (bReversePlayback)

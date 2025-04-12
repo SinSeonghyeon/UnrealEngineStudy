@@ -102,6 +102,12 @@ void FAvalancheInteractiveToolsModule::RegisterTool(FName InCategory, FAvaIntera
 		return;
 	}
 
+	if (InToolParams.Factory)
+	{
+		// Hotfix-version of the GC fix. Not permanent.
+		InToolParams.Factory->AddToRoot();
+	}
+
 	Tools[InCategory].Add(MoveTemp(InToolParams));
 
 	using namespace UE::AvaInteractiveTools::Private;
@@ -181,9 +187,9 @@ void FAvalancheInteractiveToolsModule::BroadcastRegisterCategories()
 
 void FAvalancheInteractiveToolsModule::RegisterDefaultCategories()
 {
-	RegisterCategory(CategoryName2D,     FAvaInteractiveToolsCommands::Get().Category_2D, 41);
-	RegisterCategory(CategoryName3D,     FAvaInteractiveToolsCommands::Get().Category_3D, 42);
-	RegisterCategory(CategoryNameActor,  FAvaInteractiveToolsCommands::Get().Category_Actor, 43);
+	RegisterCategory(CategoryName2D, FAvaInteractiveToolsCommands::Get().Category_2D, 41);
+	RegisterCategory(CategoryName3D, FAvaInteractiveToolsCommands::Get().Category_3D, 42);
+	RegisterCategory(CategoryNameActor, FAvaInteractiveToolsCommands::Get().Category_Actor, 43);
 }
 
 void FAvalancheInteractiveToolsModule::BroadcastRegisterTools()

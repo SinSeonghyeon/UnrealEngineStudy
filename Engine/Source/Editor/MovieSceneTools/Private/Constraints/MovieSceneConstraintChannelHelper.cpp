@@ -479,7 +479,7 @@ void FCompensationEvaluator::ComputeCompensation(UWorld* InWorld, const TSharedP
 		}
 	}
 	
-	auto EvaluateAt = [InSequencer, &AllConstraints, &BakeHelpers](FFrameNumber InFrame)
+	auto EvaluateAt = [Handle = this->Handle, InSequencer, &AllConstraints, &BakeHelpers](FFrameNumber InFrame)
 	{
 		FMovieSceneSequenceTransform RootToLocalTransform = InSequencer->GetFocusedMovieSceneSequenceTransform();
 		InFrame = (FFrameTime(InFrame) * RootToLocalTransform.InverseNoLooping()).GetFrame();
@@ -516,7 +516,10 @@ void FCompensationEvaluator::ComputeCompensation(UWorld* InWorld, const TSharedP
 			}
 		}
 
-		// ControlRig->Evaluate_AnyThread();
+		if (Handle)
+		{
+			Handle->PreEvaluate();
+		}
 	};
 
 
@@ -557,8 +560,10 @@ void FCompensationEvaluator::ComputeCompensation(UWorld* InWorld, const TSharedP
 	{
 		const FTransform ChildLocal = ChildLocals[0];
 		Handle->SetGlobalTransform(ChildGlobals[0]);
+		Handle->PreEvaluate();
 		ChildLocals[0] = Handle->GetLocalTransform();
 		Handle->SetLocalTransform(ChildLocal);
+		Handle->PreEvaluate();
 	}
 }
 
@@ -1232,8 +1237,11 @@ void FMovieSceneConstraintChannelHelper::CreateBindingIDForHandle(const TSharedP
 	{
 		return;
 	}
+
+	// make sure object is in sequencer or binding id will be empty we won't resolve the binding
+	static constexpr bool bCreateHandleIfMissing = true;
 	
-	if (const USceneComponent* SceneComponent = Cast<USceneComponent>(InHandle->GetTarget().Get()))
+	if (USceneComponent* SceneComponent = Cast<USceneComponent>(InHandle->GetTarget().Get()))
 	{
 		if (AActor* Actor = SceneComponent->GetTypedOuter<AActor>())
 		{
@@ -1246,8 +1254,20 @@ void FMovieSceneConstraintChannelHelper::CreateBindingIDForHandle(const TSharedP
 			}
 			else
 			{
-				const FGuid Guid = InSequencer->GetHandleToObject(Actor, true); //make sure object is in sequencer or binding id will be empty we won't resolve the binding
+				const FGuid Guid = InSequencer->GetHandleToObject(Actor, bCreateHandleIfMissing);
 				InHandle->ConstraintBindingID = UE::MovieScene::FRelativeObjectBindingID(Guid);
+			}
+
+			// in the context of actors with multiple scene components (such as BPs with multiple skeletal meshes, for example)
+			// the ID must be the SceneComponent handle instead of the Actor handle.
+			// this will also ensure that the binding for the component is created, if this has not yet been done.
+			if (InHandle->ConstraintBindingID.IsValid() && SceneComponent != Actor->GetRootComponent())
+			{
+				const FGuid ComponentHandle = InSequencer->GetHandleToObject(SceneComponent, bCreateHandleIfMissing);
+				if (ComponentHandle.IsValid())
+				{
+					InHandle->ConstraintBindingID = UE::MovieScene::FRelativeObjectBindingID(ComponentHandle);
+				}	
 			}
 		}
 	}

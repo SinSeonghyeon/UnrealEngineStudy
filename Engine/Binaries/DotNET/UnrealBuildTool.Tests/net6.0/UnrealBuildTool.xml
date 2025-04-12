@@ -12615,6 +12615,22 @@
             Register the platform with the UEBuildPlatform class
             </summary>
         </member>
+        <member name="M:UnrealBuildTool.ApplePlatformSDK.GetDeploymentTargetVersion(UnrealBuildTool.TargetType)">
+            <summary>
+            Get the default deployment target version for the given target type. This will be put into the .plist file for runtime check
+            Will be in the format A.B.C
+            </summary>
+            <param name="Type"></param>
+            <returns></returns>
+        </member>
+        <member name="M:UnrealBuildTool.ApplePlatformSDK.GetBuildTargetVersion(UnrealBuildTool.TargetType)">
+            <summary>
+            Get the default build target version for the given target type. This will be passed to clang when compiling/linking
+            Will be in the format AA.BB
+            </summary>
+            <param name="Type"></param>
+            <returns></returns>
+        </member>
         <member name="T:UnrealBuildTool.MacExports">
             <summary>
             Public Mac functions exposed to UAT
@@ -12673,12 +12689,12 @@
             Register the platform with the UEPlatformProjectGenerator class
             </summary>
         </member>
-        <member name="F:UnrealBuildTool.MacToolChainSettings.MacOSVersion">
+        <member name="M:UnrealBuildTool.MacToolChainSettings.MinMacBuildVersion(UnrealBuildTool.TargetType)">
             <summary>
             Which version of the Mac OS X to allow at run time
             </summary>
         </member>
-        <member name="F:UnrealBuildTool.MacToolChainSettings.MinMacOSVersion">
+        <member name="M:UnrealBuildTool.MacToolChainSettings.MinMacDeploymentVersion(UnrealBuildTool.TargetType)">
             <summary>
             Minimum version of Mac OS X to actually run on, running on earlier versions will display the system minimum version error dialog and exit.
             </summary>

@@ -1697,7 +1697,6 @@ void UWorld::Tick( ELevelTick TickType, float DeltaSeconds )
 
 	{
 		TRACE_CPUPROFILER_EVENT_SCOPE(ConditionalCollectGarbage);
-		// GarbageCollection - 1 - Start  매 틱마다 ConditionalCollectGarbage를 호출합니다.
 		GEngine->ConditionalCollectGarbage();
 	}
 	
@@ -1782,7 +1781,7 @@ void UWorld::Tick( ELevelTick TickType, float DeltaSeconds )
 
 	FWorldDelegates::OnWorldTickEnd.Broadcast(this, TickType, DeltaSeconds);
 }
-// GarbageCollection - 30 - UWorld::CleanupActors - 월드의 레벨을 순회하며 삭제된 액터를 레벨에서 정리하는 단계입니다.
+
 void UWorld::CleanupActors()
 {
 	// Remove NULL entries from actor list. Only does so for dynamic actors to avoid resorting; in theory static 

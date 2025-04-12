@@ -147,6 +147,12 @@
 		
 		<!-- Source code and demos for container images -->
 		Engine/Extras/Containers/...
+
+		<!-- Additional documentation -->
+		Engine/Plugins/Runtime/NetworkPrediction/readme.txt
+		Engine/Plugins/Experimental/Mover/README.md
+		Engine/Plugins/Runtime/GameplayAbilities/README.md
+
 	</Property>
 	
 	<!-- Files which can exist under any engine or engine-platform directory -->
@@ -281,6 +287,9 @@
 		<!-- Default resource files -->
 		Engine/Build/Windows/Resources/...
 
+		<!-- Steam Deck files -->
+		Engine/Build/SteamDeck/...
+
 		<!-- Binaries which are explicitly staged by UAT rather than listing runtime dependencies -->
 		Engine/Binaries/ThirdParty/OpenSSL/...
 
@@ -328,11 +337,12 @@
 		<!-- nanosvg -->
 		Engine/Source/ThirdParty/nanosvg/...
 		
-		<!-- LiveLinkHub files -->
-		Engine/Binaries/Win64/LiveLinkHub-Win64-Shipping.exe
-		Engine/Binaries/Win64/ViconDataStreamSDK_CPP.dll
-		Engine/Binaries/Win64/boost_thread-vc141-mt-x64-1_75.dll
-		Engine/Programs/LiveLinkHub/...
+		<!-- Catch2 -->
+		Engine/Source/ThirdParty/Catch2/v3.4.0/...
+		Engine/Source/ThirdParty/Catch2/Catch2_v3.4.0.tps
+		Engine/Source/ThirdParty/Catch2/Catch2.build.cs
+		Engine/Source/ThirdParty/Catch2/Catch2.tps
+		Engine/Source/ThirdParty/Catch2/Catch2Extras.Build.cs
 	</Property>
 
 	<Property Name="CopyEditorExceptionsWin64" Value="$(CopyEditorExceptions)">
@@ -387,10 +397,13 @@
 		Engine/Binaries/Mac/zenserver
 		Engine/Binaries/Mac/zen
 		Engine/Binaries/Mac/crashpad_handler
-		
-		<!-- LiveLinkHub files -->
-		Engine/Binaries/Mac/LiveLinkHub-Mac-Shipping.app/...
-		Engine/Programs/LiveLinkHub/...
+			
+		<!-- Catch2 -->
+		Engine/Source/ThirdParty/Catch2/v3.4.0/...
+		Engine/Source/ThirdParty/Catch2/Catch2_v3.4.0.tps
+		Engine/Source/ThirdParty/Catch2/Catch2.build.cs
+		Engine/Source/ThirdParty/Catch2/Catch2.tps
+		Engine/Source/ThirdParty/Catch2/Catch2Extras.Build.cs
 	</Property>
 
 	<Property Name="CopyEditorExceptionsMac" Value="$(CopyEditorExceptions)">
@@ -423,6 +436,9 @@
 		Engine/Build/BatchFiles/RunUAT.sh
 		Engine/Build/BatchFiles/RunUBT.sh
 
+		<!-- Steam Deck files -->
+		Engine/Build/SteamDeck/...
+
 		<!-- Debug tools -->
 		Engine/Binaries/Linux/dump_syms
 		Engine/Binaries/Linux/BreakpadSymbolEncoder
@@ -447,11 +463,13 @@
 		<!-- zenserver is the tool for Unreal Zen Storage services like Local DDC and optionally cooked output storage -->
 		Engine/Binaries/Linux/zenserver
 		Engine/Binaries/Linux/zen
-		
-		<!-- LiveLinkHub Files -->
-		Engine/Binaries/Linux/LiveLinkHub-Linux-Shipping
-		Engine/Programs/LiveLinkHub/...
-		
+			
+		<!-- Catch2 -->
+		Engine/Source/ThirdParty/Catch2/v3.4.0/...
+		Engine/Source/ThirdParty/Catch2/Catch2_v3.4.0.tps
+		Engine/Source/ThirdParty/Catch2/Catch2.build.cs
+		Engine/Source/ThirdParty/Catch2/Catch2.tps
+		Engine/Source/ThirdParty/Catch2/Catch2Extras.Build.cs
 	</Property>
 	<Property Name="CopyEditorExceptionsLinux" Value="$(CopyEditorExceptions)">
 		<!-- Exclude Windows/Mac binaries on Linux here -->

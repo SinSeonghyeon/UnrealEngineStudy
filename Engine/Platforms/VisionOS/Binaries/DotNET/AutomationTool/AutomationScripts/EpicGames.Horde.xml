@@ -11387,40 +11387,34 @@
         <member name="M:EpicGames.Horde.HordeHttpAuthHandlerState.DisposeAsync">
             <inheritdoc/>
         </member>
-        <member name="M:EpicGames.Horde.HordeHttpAuthHandlerState.IsAuthenticated">
+        <member name="M:EpicGames.Horde.HordeHttpAuthHandlerState.IsLoggedIn">
             <summary>
             Checks if we have a valid auth header at the moment
             </summary>
         </member>
-        <member name="M:EpicGames.Horde.HordeHttpAuthHandlerState.Invalidate">
+        <member name="M:EpicGames.Horde.HordeHttpAuthHandlerState.Invalidate(System.String)">
             <summary>
-            Invalidate the cached header value
+            Marks the given access token as invalid, having attempted to use it and got an unauthorized response
             </summary>
+            <param name="accessToken">The access  header to invalidate</param>
         </member>
-        <member name="M:EpicGames.Horde.HordeHttpAuthHandlerState.Invalidate(System.Net.Http.Headers.AuthenticationHeaderValue)">
-            <summary>
-            Invalidate a cached header value
-            </summary>
-            <param name="authHeader">The auth header to invalidate</param>
-        </member>
-        <member name="M:EpicGames.Horde.HordeHttpAuthHandlerState.TryGetConfiguredAuthHeader">
+        <member name="M:EpicGames.Horde.HordeHttpAuthHandlerState.GetAccessTokenFromConfig">
             <summary>
             Try to get a configured auth header
             </summary>
         </member>
-        <member name="M:EpicGames.Horde.HordeHttpAuthHandlerState.RefreshAsync(System.Boolean,System.Threading.CancellationToken)">
+        <member name="M:EpicGames.Horde.HordeHttpAuthHandlerState.LoginAsync(System.Boolean,System.Threading.CancellationToken)">
             <summary>
             Refresh the auth state
             </summary>
-            <param name="allowLogin">Whether to allow logging in</param>
-            <param name="cancellationToken"></param>
+            <param name="interactive">Whether to allow logging in interactively</param>
+            <param name="cancellationToken">Cancellation token for the operation</param>
             <returns></returns>
         </member>
-        <member name="M:EpicGames.Horde.HordeHttpAuthHandlerState.TryGetAuthHeaderAsync(System.Threading.CancellationToken)">
+        <member name="M:EpicGames.Horde.HordeHttpAuthHandlerState.GetAccessTokenAsync(System.Boolean,System.Threading.CancellationToken)">
             <summary>
-            Gets a new auth header
+            Gets the current access token
             </summary>
-            <param name="cancellationToken">Cancellation token for the operation</param>
         </member>
         <member name="T:EpicGames.Horde.HordeHttpClient">
             <summary>
