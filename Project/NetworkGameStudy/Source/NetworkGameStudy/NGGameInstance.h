@@ -23,5 +23,5 @@ public:
 
 private:
 	UPROPERTY(Transient)
-	UItemDataTableManager* ItemDataTableManager;
+	TObjectPtr<UItemDataTableManager> ItemDataTableManager;
 };

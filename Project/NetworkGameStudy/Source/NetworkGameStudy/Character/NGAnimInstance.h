@@ -20,8 +20,13 @@ public:
 	// 공격 애님 몽타주를 실행합니다.
 	void PlayAttackMontage();
 
+	// 피격 애님 몽타주를 실행합니다.
+	void PlayHitMontage();
+
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Montages")
-	UAnimMontage* AttackMontage;
+	TObjectPtr<UAnimMontage> AttackMontage;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Montages")
+	TObjectPtr<UAnimMontage> HitMontage;
 };

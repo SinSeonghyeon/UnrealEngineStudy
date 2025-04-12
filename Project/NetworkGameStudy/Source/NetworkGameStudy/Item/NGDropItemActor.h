@@ -22,10 +22,10 @@ protected:
 
 protected:
 	UPROPERTY(ReplicatedUsing = OnRep_MeshChanged)
-	UStaticMesh* ReplicatedMesh;
+	TObjectPtr<UStaticMesh> ReplicatedMesh;
 
 	UPROPERTY(VisibleAnywhere)
-	UStaticMeshComponent* MeshComponent;
+	TObjectPtr<UStaticMeshComponent> MeshComponent;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
     FName ItemID;

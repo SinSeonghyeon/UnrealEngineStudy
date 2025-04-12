@@ -40,23 +40,12 @@ void ANGBreakableProp::BreakProp()
 {
 	NG_LOG(LogNGNetwork, Log, TEXT("Begin"));
 
-	UWorld* World = GetWorld();
-	if (!World) return;
+	SpawnDropItem();
 
-	FVector SpawnLocation = GetActorLocation() + FMath::VRand() * 100.f + FVector(0.0f, 0.0f, FMath::FRandRange(100.f, 200.f));
-	FRotator SpawnRotation = FRotator::ZeroRotator;
-
-	const FItemData* ItemData = UNGGameInstance::GetItemDataTableManager(this)->GetItemData(DropTimeIDs[FMath::RandRange(0, DropTimeIDs.Num() - 1)]);
-
-	ANGDropItemActor* Dropped = World->SpawnActor<ANGDropItemActor>(ItemData->DropActorClass, SpawnLocation, SpawnRotation);
-	
 	MulticastRPCDestroyMesh();
 	
-
-	if (Dropped)
-	{
-		UE_LOG(LogTemp, Log, TEXT("Dropped item: %s"), *Dropped->GetName());
-	}
+	// 서버에서 액터를 삭제합니다. 클라에 동기화가 맞춰집니다.
+	GetWorldTimerManager().SetTimer(DestroyTimerHandle, this, &ANGBreakableProp::DestroyActor, 2.0f, false);
 }
 
 void ANGBreakableProp::ShakeProp()
@@ -88,26 +77,58 @@ void ANGBreakableProp::ShakeProp()
 
 void ANGBreakableProp::DestroyActor()
 {
+	NG_LOG(LogTemp, Log, TEXT("Begin"));
 	Destroy();
+}
+
+void ANGBreakableProp::SpawnDropItem()
+{
+	UWorld* World = GetWorld();
+	if (!World) return;
+
+	FVector Origin, BoxExtent;
+	GetActorBounds(true, Origin, BoxExtent);
+
+	float RandomAngle = FMath::FRandRange(0.f, 2.f * PI);
+	FVector Offset = { FMath::Cos(RandomAngle) * SpawnRadius, FMath::Sin(RandomAngle) * SpawnRadius, FMath::FRandRange(SpawnHeightMin, SpawnHeightMax) };
+	FVector SpawnLocation = GetActorLocation() + Offset;
+	FRotator SpawnRotation = FRotator::ZeroRotator;
+
+	if (!DropItmeIDs.IsEmpty())
+	{
+		const FItemData* ItemData = UNGGameInstance::GetItemDataTableManager(this)->GetItemData(DropItmeIDs[FMath::RandRange(0, DropItmeIDs.Num() - 1)]);
+
+		ANGDropItemActor* Dropped = World->SpawnActor<ANGDropItemActor>(ItemData->DropActorClass, SpawnLocation, SpawnRotation);
+
+		if (Dropped)
+			UE_LOG(LogTemp, Log, TEXT("Dropped item: %s"), *Dropped->GetName());
+	}
 }
 
 void ANGBreakableProp::MulticastRPCDestroyMesh_Implementation()
 {
+	NG_LOG(LogTemp,Log,TEXT("Begin"));
+
 	PropMesh->SetVisibility(false);
-	// PropMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	PropMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
-	DestructibleMesh->SetVisibility(true);
-	DestructibleMesh->SetSimulatePhysics(true);
-	DestructibleMesh->AddForce(FVector(0.0f, 0.0f, -1.0f));
-
-	// 서버로 옮겨줘야함. 테스트를 위해 추가.
-	GetWorldTimerManager().SetTimer(DestroyTimerHandle, this, &ANGBreakableProp::DestroyActor, 1.0f, false);
+	// 서버에서는 해당 함수가 실행될 필요가 없습니다.
+	if (GetNetMode() == NM_Client)
+	{
+		DestructibleMesh->SetVisibility(true);
+		DestructibleMesh->SetSimulatePhysics(true);
+		DestructibleMesh->AddForce(FVector(0.0f, 0.0f, -1.0f));
+	}
 }
 
 void ANGBreakableProp::MulticastRPCShakeProp_Implementation()
 {
-	// AttackTime 후에 공격 가능 여부를 초기화 시킵니다.
-	GetWorldTimerManager().SetTimer(ShakeHandle, this, &ANGBreakableProp::ShakeProp, 0.016f, true);
+	// 서버에서는 나무를 흔들필요가 없습니다.
+	if (GetNetMode() == NM_Client)
+	{
+		// AttackTime 후에 공격 가능 여부를 초기화 시킵니다.
+		GetWorldTimerManager().SetTimer(ShakeHandle, this, &ANGBreakableProp::ShakeProp, 0.016f, true);
+	}
 }
 
 // 해당 코드는 서버에서 실행되고 있습니다!!
@@ -126,6 +147,10 @@ float ANGBreakableProp::TakeDamage(float DamageAmount, FDamageEvent const& Damag
 	else
 	{
 		MulticastRPCShakeProp();
+
+		// 파괴되지 않을때도 50퍼의 확률로 랜덤 스폰합니다.
+		if(FMath::FRandRange(0.0f, 100.0f) > 50.0f)
+			SpawnDropItem();
 	}
 
 	return ActualDamage;

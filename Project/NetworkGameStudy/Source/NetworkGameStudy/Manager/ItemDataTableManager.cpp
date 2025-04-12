@@ -10,7 +10,7 @@ UItemDataTableManager::UItemDataTableManager(const FObjectInitializer& ObjectIni
 : Super(ObjectInitializer)
 {
 	static ConstructorHelpers::FObjectFinder<UDataTable> ItemTableObj(
-		TEXT("/Script/Engine.DataTable'/Game/Item/ItemDataTable.ItemDataTable'")
+		TEXT("/Script/Engine.DataTable'/Game/00_Game/Item/ItemDataTable.ItemDataTable'")
 	);
 
 	if (ItemTableObj.Succeeded())

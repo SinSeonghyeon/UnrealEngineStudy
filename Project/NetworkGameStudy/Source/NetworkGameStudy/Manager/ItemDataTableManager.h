@@ -23,5 +23,5 @@ public:
 
 private:
 	UPROPERTY(EditDefaultsOnly)
-	UDataTable* ItemDataTable;
+	TObjectPtr<UDataTable> ItemDataTable;
 };

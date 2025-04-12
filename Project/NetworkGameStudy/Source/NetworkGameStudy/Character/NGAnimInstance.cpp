@@ -5,5 +5,12 @@
 
 void UNGAnimInstance::PlayAttackMontage()
 {
-	Montage_Play(AttackMontage);
+	if (!GetCurrentActiveMontage())
+		Montage_Play(AttackMontage);
+}
+
+void UNGAnimInstance::PlayHitMontage()
+{
+	if(!GetCurrentActiveMontage())
+		Montage_Play(HitMontage);
 }

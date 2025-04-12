@@ -22,5 +22,5 @@ struct FItemData : public FTableRowBase
     TSubclassOf<class ANGDropItemActor> DropActorClass;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    UTexture2D* Icon;
+	TObjectPtr<UTexture2D> Icon;
 };

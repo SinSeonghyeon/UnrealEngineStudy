@@ -33,6 +33,8 @@ private:
 
 	void DestroyActor();
 
+	void SpawnDropItem();
+
 	// 메쉬가 파괴되는 연출을 호출합니다.
 	UFUNCTION(NetMulticast, UnReliable)
 	void MulticastRPCDestroyMesh();
@@ -50,7 +52,7 @@ protected:
 	int32 CurrentHP;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Prop, meta = (AllowPrivateAccess = "true"))
-	TArray<FName> DropTimeIDs;
+	TArray<FName> DropItmeIDs;
 		
 	UPROPERTY(EditAnywhere)
 	UGeometryCollectionComponent* DestructibleMesh;
@@ -64,6 +66,15 @@ private:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Prop, meta = (AllowPrivateAccess = "true"))
 	float ShakeStrength = 1.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Prop, meta = (AllowPrivateAccess = "true"))
+	float SpawnRadius = 100.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Prop, meta = (AllowPrivateAccess = "true"))
+	float SpawnHeightMin = 50.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Prop, meta = (AllowPrivateAccess = "true"))
+	float SpawnHeightMax = 200.0f;
 
 	float CurrentShakeTimeRemaining = 3.0f;
 
