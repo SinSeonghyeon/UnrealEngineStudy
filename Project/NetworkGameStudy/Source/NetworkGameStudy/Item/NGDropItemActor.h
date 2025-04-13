@@ -22,7 +22,7 @@ protected:
 
 protected:
 	UPROPERTY(ReplicatedUsing = OnRep_MeshChanged)
-	TObjectPtr<UStaticMesh> ReplicatedMesh;
+	TObjectPtr<UStaticMesh> Mesh_Rep;
 
 	UPROPERTY(VisibleAnywhere)
 	TObjectPtr<UStaticMeshComponent> MeshComponent;

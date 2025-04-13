@@ -10,12 +10,13 @@
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "InputActionValue.h"
-#include "NGAnimInstance.h"
+#include "Animation/NGAnimInstance.h"
 #include "EngineUtils.h"
 #include "GameFramework/GameStateBase.h"
 #include "../NetworkGameStudy.h"
 #include "Engine/OverlapResult.h"
 #include "Engine/DamageEvents.h"
+#include "Net/UnrealNetwork.h"
 
 //////////////////////////////////////////////////////////////////////////
 // ANGPlayerCharacter
@@ -49,6 +50,11 @@ ANGPlayerCharacter::ANGPlayerCharacter()
 		// 부모 설정 + 소켓에 붙이기
 		WeaponMeshComponent->AttachToComponent(CharacterMesh, FAttachmentTransformRules::KeepRelativeTransform, FName("waepon_socket"));
 	}
+
+	static ConstructorHelpers::FObjectFinder<USkeletalMesh> PalSphereMeshRef(TEXT("/Script/Engine.SkeletalMesh'/Game/00_Game/Character/Weapon/Mesh/Shape_Sphere.Shape_Sphere'"));
+
+	if (nullptr != PalSphereMeshRef.Object)
+		PalSphereMesh = PalSphereMeshRef.Object;
 }
 
 void ANGPlayerCharacter::BeginPlay()
@@ -60,6 +66,57 @@ void ANGPlayerCharacter::BeginPlay()
 void ANGPlayerCharacter::PostInitializeComponents()
 {
 	Super::PostInitializeComponents();
+}
+
+void ANGPlayerCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(ANGPlayerCharacter, TargetFocusStack_Rep);
+	DOREPLIFETIME(ANGPlayerCharacter, CurrentWeaponMeshName);
+	DOREPLIFETIME(ANGPlayerCharacter, IsPalSphereLockOn);
+}
+
+void ANGPlayerCharacter::OnRep_ChangedFocusStack()
+{
+	if (TargetFocusStack_Rep.IsEmpty())
+	{
+		bUseControllerRotationYaw = false;
+		GetCharacterMovement()->bOrientRotationToMovement = true;
+	}
+	else
+	{
+		bUseControllerRotationYaw = true;
+		GetCharacterMovement()->bOrientRotationToMovement = false;
+	}
+}
+
+void ANGPlayerCharacter::OnRep_ChangedWeaponMesh()
+{
+	// 우선 임의로 상수를 넣어서 동작하게 만듭니다.
+	if (CurrentWeaponMeshName == TEXT("Sword"))
+	{
+		WeaponMeshComponent->SetSkeletalMesh(WeaponMesh);
+	}
+	else if (CurrentWeaponMeshName == TEXT("PalSphere"))
+	{
+		WeaponMeshComponent->SetSkeletalMesh(PalSphereMesh);
+	}
+	else
+	{
+		WeaponMeshComponent->SetSkeletalMesh(nullptr);
+	}
+}
+
+
+void ANGPlayerCharacter::OnRep_ChangedIsPalSphereLockOn()
+{
+	NG_LOG(LogTemp, Log, TEXT("Begin"));
+
+	if (IsPalSphereLockOn)
+		GetCachedAnimInstance()->PlayLockOn();
+	else
+		GetCachedAnimInstance()->StopLockOn();
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -75,10 +132,10 @@ void ANGPlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 			Subsystem->AddMappingContext(DefaultMappingContext, 0);
 		}
 	}
-	
+
 	// Set up action bindings
 	if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent)) {
-		
+
 		// Jumping
 		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Started, this, &ACharacter::Jump);
 		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Completed, this, &ACharacter::StopJumping);
@@ -90,7 +147,13 @@ void ANGPlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &ANGPlayerCharacter::Look);
 
 		// Attack
-		EnhancedInputComponent->BindAction(AttackAction, ETriggerEvent::Triggered, this, &ANGPlayerCharacter::Attack);
+		EnhancedInputComponent->BindAction(AttackAction, ETriggerEvent::Started, this, &ANGPlayerCharacter::AttackStarted);
+		EnhancedInputComponent->BindAction(AttackAction, ETriggerEvent::Triggered, this, &ANGPlayerCharacter::AttackTriggered);
+		EnhancedInputComponent->BindAction(AttackAction, ETriggerEvent::Completed, this, &ANGPlayerCharacter::AttackCompleted);
+
+		// LockOn
+		EnhancedInputComponent->BindAction(LockOnAction, ETriggerEvent::Started, this, &ANGPlayerCharacter::LockOn);
+		EnhancedInputComponent->BindAction(LockOnAction, ETriggerEvent::Completed, this, &ANGPlayerCharacter::LockOnCancel);
 	}
 	else
 	{
@@ -100,12 +163,6 @@ void ANGPlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 
 //////////////////////////////////////////////////////////////////////////
 // Input
-
-void ANGPlayerCharacter::Attack(const FInputActionValue& Value)
-{
-	Attack_Implementation();
-}
-
 void ANGPlayerCharacter::Move(const FInputActionValue& Value)
 {
 	// input is a Vector2D
@@ -140,4 +197,99 @@ void ANGPlayerCharacter::Look(const FInputActionValue& Value)
 		AddControllerYawInput(LookAxisVector.X);
 		AddControllerPitchInput(LookAxisVector.Y);
 	}
+}
+
+void ANGPlayerCharacter::AttackTriggered(const FInputActionValue& Value)
+{
+	if (!IsPalSphereLockOn)
+	{
+		Attack_Implementation();
+	}
+	else
+	{
+		ThrowPalSphere();
+	}
+}
+
+void ANGPlayerCharacter::AttackStarted(const FInputActionValue& Value)
+{
+	ServerRPCTryFocusTarget(true, TEXT("ANGPlayerCharacter::AttackStarted"));
+}
+
+void ANGPlayerCharacter::AttackCompleted(const FInputActionValue& Value)
+{
+	ServerRPCTryFocusTarget(false, TEXT("ANGPlayerCharacter::AttackCompleted"));
+}
+
+void ANGPlayerCharacter::LockOn(const FInputActionValue& Value)
+{
+	NG_LOG(LogTemp, Log, TEXT("Begin"));
+	ServerRPCSetIsPalSphereLockOn(true);
+	ServerRPCTryFocusTarget(true, TEXT("ANGPlayerCharacter::LockOn"));
+	ServerRPCChangeWeaponMesh(TEXT("PalSphere"));
+}
+
+void ANGPlayerCharacter::LockOnCancel(const FInputActionValue& Value)
+{
+	NG_LOG(LogTemp, Log, TEXT("Begin"));
+	ServerRPCSetIsPalSphereLockOn(false);
+	ServerRPCTryFocusTarget(false, TEXT("ANGPlayerCharacter::LockOnCancel"));
+	ServerRPCChangeWeaponMesh(TEXT("Sword"));
+}
+
+void ANGPlayerCharacter::ServerRPCTryFocusTarget_Implementation(bool InUseControllerRotationYaw, FName InDebugName)
+{
+	if (InUseControllerRotationYaw)
+	{
+		TargetFocusStack_Rep.Add(InDebugName);
+	}
+	else
+	{
+		// 생각해보니 들어오는 순서대로 나갈 일이 없으니..
+		// 자세하게 디버깅하고 싶다면 맵 구조로 만들자
+		FName DebugName = TargetFocusStack_Rep.Pop();
+		// ensure(DebugName == InDebugName);
+	}
+
+	// 서버에도 반영이 필요합니다.
+	OnRep_ChangedFocusStack();
+}
+
+void ANGPlayerCharacter::ServerRPCSetIsPalSphereLockOn_Implementation(bool bLockOn)
+{
+	IsPalSphereLockOn = bLockOn;
+}
+
+void ANGPlayerCharacter::ServerRPCChangeWeaponMesh_Implementation(FName WeaponName)
+{
+	CurrentWeaponMeshName = WeaponName;
+
+	OnRep_ChangedWeaponMesh();
+}
+
+void ANGPlayerCharacter::ServerRPCSpawnPalSphere_Implementation()
+{
+	NG_LOG(LogTemp, Warning, TEXT("!!!!Spawn!!!!"));
+
+	// 서버에서 팰 스피어를 생성합니다.
+	FVector SpawnLocation = GetActorLocation() + GetActorForwardVector() * 100.f + FVector(0.0f, 0.0f, 50.0f);
+	FRotator SpawnRotation = GetControlRotation();
+	// 팰스피어를 생성합니다.
+	ANGWeaponPalSphere* PalSphere = GetWorld()->SpawnActor<ANGWeaponPalSphere>(ANGWeaponPalSphere::StaticClass(), SpawnLocation, SpawnRotation);
+	if (PalSphere)
+		PalSphere->SetOwner(this);
+}
+
+
+
+void ANGPlayerCharacter::ThrowPalSphere()
+{
+	if (!bCanAttack) return;
+
+	bCanAttack = false;
+
+	// AttackTime 후에 공격 가능 여부를 초기화 시킵니다.
+	GetWorldTimerManager().SetTimer(AttackTimerHandle, this, &ANGPlayerCharacter::ResetAttack, AttackTime, false);
+
+	ServerRPC_PlayAnim(TEXT("Throw"));
 }

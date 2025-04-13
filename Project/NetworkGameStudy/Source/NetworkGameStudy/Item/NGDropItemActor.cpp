@@ -34,7 +34,7 @@ void ANGDropItemActor::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Out
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
-	DOREPLIFETIME(ANGDropItemActor, ReplicatedMesh);
+	DOREPLIFETIME(ANGDropItemActor, Mesh_Rep);
 }
 
 void ANGDropItemActor::OnMeshOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
@@ -49,8 +49,8 @@ void ANGDropItemActor::OnMeshOverlapEnd(UPrimitiveComponent* OverlappedComponent
 
 void ANGDropItemActor::OnRep_MeshChanged()
 {
-	if (MeshComponent && ReplicatedMesh)
+	if (MeshComponent && Mesh_Rep)
 	{
-		MeshComponent->SetStaticMesh(ReplicatedMesh);
+		MeshComponent->SetStaticMesh(Mesh_Rep);
 	}
 }

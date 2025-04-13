@@ -10,7 +10,7 @@
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "InputActionValue.h"
-#include "NGAnimInstance.h"
+#include "Animation/NGAnimInstance.h"
 #include "EngineUtils.h"
 #include "GameFramework/GameStateBase.h"
 #include "../NetworkGameStudy.h"
@@ -62,6 +62,7 @@ void ANGCharacterBase::Attack_Implementation()
 {
 	if (!bCanAttack) return;
 
+	// 플레이어의 경우 해당 분기를 타게됩니다.
 	if (GetNetMode() == ENetMode::NM_Client)
 	{
 		bCanAttack = false;
@@ -77,6 +78,7 @@ void ANGCharacterBase::Attack_Implementation()
 	}
 	else
 	{
+		// 서버에서 호출되는 경우는 팰들이 공격할 때입니다.
 		MultiCastRPCPlayAttack_PlayAnim();
 	}
 }
@@ -148,6 +150,16 @@ bool ANGCharacterBase::ServerRPCAttack_PlayAnim_Validate(float AttackStartTime)
 	}
 
 	return (AttackStartTime - LastAttackStartTime) > (AttackTime - 0.4f);
+}
+
+void ANGCharacterBase::ServerRPC_PlayAnim_Implementation(FName AnimName)
+{
+	MultiCastRPCPlay_PlayAnim(AnimName);
+}
+
+void ANGCharacterBase::MultiCastRPCPlay_PlayAnim_Implementation(FName AnimName)
+{
+	GetCachedAnimInstance()->PlayAnimFromName(AnimName);
 }
 
 // 다른 캐릭터의 애니메이션을 재생하는 것이 조금 이상하긴 하지만..

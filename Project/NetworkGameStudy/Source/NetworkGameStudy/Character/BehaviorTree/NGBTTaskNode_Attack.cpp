@@ -19,6 +19,9 @@ EBTNodeResult::Type UNGBTTaskNode_Attack::ExecuteTask(UBehaviorTreeComponent& Ow
 	if (ANGCharacterBase* MyCharacter = Cast<ANGCharacterBase>(OwnerComp.GetAIOwner()->GetPawn()))
 	{
 		MyCharacter->Attack_Implementation();
+
+		return EBTNodeResult::Succeeded;
+
 	}
 	else
 	{

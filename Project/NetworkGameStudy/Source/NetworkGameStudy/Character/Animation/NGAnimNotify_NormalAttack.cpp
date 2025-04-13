@@ -2,8 +2,8 @@
 
 
 #include "NGAnimNotify_NormalAttack.h"
-#include "../NetworkGameStudy.h"
-#include "NGCharacterBase.h"
+#include "../../NetworkGameStudy.h"
+#include "../NGCharacterBase.h"
 
 void UNGAnimNotify_NormalAttack::Notify(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation)
 {

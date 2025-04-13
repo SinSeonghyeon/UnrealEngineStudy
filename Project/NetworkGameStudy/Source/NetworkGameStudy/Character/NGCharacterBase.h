@@ -39,6 +39,12 @@ protected:
 	UFUNCTION(Client, Reliable)
 	void ClientRPCPlayAttack_PlayAnim(ANGCharacterBase* CharacterToPlay);
 
+	UFUNCTION(Server, Reliable)
+	void ServerRPC_PlayAnim(FName AnimName);
+
+	UFUNCTION(NetMulticast, Reliable)
+	void MultiCastRPCPlay_PlayAnim(FName AnimName);
+
 	// 이 함수는 팰이 공격할 때 호출되는 함수입니다. 팰의 경우 서버에서 AI가 관리되고 있으니 공격 시간을 기록할 필요는 없을 것 같습니다.
 	UFUNCTION(NetMulticast, Reliable)
 	void MultiCastRPCPlayAttack_PlayAnim();
