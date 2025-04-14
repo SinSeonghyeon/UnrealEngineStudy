@@ -13,6 +13,25 @@ ANGPalController::ANGPalController()
 	AIPerceptionComponent->OnTargetPerceptionUpdated.AddDynamic(this, &ANGPalController::OnTargetPerceptionUpdated);
 }
 
+void ANGPalController::PauseBehaviorTree()
+{
+	FString Capture = TEXT("Capture");
+	CachedBehaviorTreeComponent->PauseLogic(Capture);
+}
+
+void ANGPalController::ResumeBehaviorTree()
+{
+	FString Capture = TEXT("CaptureCancel");
+	CachedBehaviorTreeComponent->ResumeLogic(Capture);
+}
+
+
+void ANGPalController::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{	
+	NG_LOG(LogTemp, Log, TEXT("EndPlay"));
+	Super::EndPlay(EndPlayReason);
+}
+
 void ANGPalController::OnPossess(APawn* InPawn)
 {
 	Super::OnPossess(InPawn);
@@ -25,6 +44,8 @@ void ANGPalController::OnPossess(APawn* InPawn)
 			RunBehaviorTree(BehaviorTree_OwnedPal);
 		else
 			RunBehaviorTree(BehaviorTree_UnOwnedPal);
+
+		CachedBehaviorTreeComponent = GetComponentByClass<UBehaviorTreeComponent>();
 	}
 
 }

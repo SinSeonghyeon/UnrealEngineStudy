@@ -19,9 +19,13 @@ class NETWORKGAMESTUDY_API UNGGameInstance : public UGameInstance
 public:
 	UNGGameInstance(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get());
 
-	static UItemDataTableManager* GetItemDataTableManager(UObject* Object);
+	static UItemDataTableManager* GetItemDataTableManager(TObjectPtr<UWorld> InWorld);
 
+	static UMaterial* GetEmissiveMaterial(TObjectPtr<UWorld> InWorld);
 private:
 	UPROPERTY(Transient)
 	TObjectPtr<UItemDataTableManager> ItemDataTableManager;
+
+	UPROPERTY()
+	TObjectPtr<UMaterial> EmissiveMaterial;
 };

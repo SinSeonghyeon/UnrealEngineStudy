@@ -10,7 +10,7 @@ void UNGAnimNotify_SpawnPalSphere::Notify(USkeletalMeshComponent* MeshComp, UAni
 	ANGPlayerCharacter* Owner = Cast<ANGPlayerCharacter>(MeshComp->GetOwner());
 	if (!Owner) return;
 
-	if (Owner->GetLocalRole() == ENetRole::ROLE_Authority || Owner->GetLocalRole() == ENetRole::ROLE_AutonomousProxy)
+	if (/*Owner->GetLocalRole() == ENetRole::ROLE_Authority ||*/ Owner->GetLocalRole() == ENetRole::ROLE_AutonomousProxy)
 	{
 		Owner->ServerRPCSpawnPalSphere();
 	}

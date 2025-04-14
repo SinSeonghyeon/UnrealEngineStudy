@@ -8,6 +8,7 @@
 
 class UBehaviorTree;
 struct FAIStimulus;
+class UBehaviorTreeComponent;
 
 /**
  * 
@@ -19,6 +20,13 @@ class NETWORKGAMESTUDY_API ANGPalController : public AAIController
 public:
 	ANGPalController();
 
+public:
+	void PauseBehaviorTree();
+
+	void ResumeBehaviorTree();
+	
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+
 protected:
 	virtual void OnPossess(APawn* InPawn) override;
 	
@@ -26,6 +34,7 @@ protected:
 	void OnTargetPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus);
 
 	void StartEnemyTimer();
+
 private:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = AI, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UBehaviorTree> BehaviorTree_OwnedPal;
@@ -35,6 +44,8 @@ private:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = AI, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UAIPerceptionComponent> AIPerceptionComponent;
+
+	TObjectPtr<UBehaviorTreeComponent> CachedBehaviorTreeComponent;
 
 	FTimerHandle EnemyTimer;
 

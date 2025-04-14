@@ -96,7 +96,7 @@ void ANGBreakableProp::SpawnDropItem()
 
 	if (!DropItmeIDs.IsEmpty())
 	{
-		const FItemData* ItemData = UNGGameInstance::GetItemDataTableManager(this)->GetItemData(DropItmeIDs[FMath::RandRange(0, DropItmeIDs.Num() - 1)]);
+		const FItemData* ItemData = UNGGameInstance::GetItemDataTableManager(GetWorld())->GetItemData(DropItmeIDs[FMath::RandRange(0, DropItmeIDs.Num() - 1)]);
 
 		ANGDropItemActor* Dropped = World->SpawnActor<ANGDropItemActor>(ItemData->DropActorClass, SpawnLocation, SpawnRotation);
 
