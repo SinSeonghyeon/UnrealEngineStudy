@@ -15,7 +15,8 @@ public class NetworkGameStudy : ModuleRules
 			"Engine",
 			"InputCore",
 			"EnhancedInput",
-			"GeometryCollectionEngine"
+			"GeometryCollectionEngine",
+			"UMG"
 		});
 	}
 }

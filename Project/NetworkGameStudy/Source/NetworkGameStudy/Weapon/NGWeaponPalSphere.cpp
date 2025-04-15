@@ -158,7 +158,7 @@ void ANGWeaponPalSphere::PlayCaptureShake()
 
 void ANGWeaponPalSphere::ServerRPCEvaluateCaptureResult_Implementation()
 {
-	bCaptureSuccessed = FMath::RandRange(0, 100) < 40; // 40% 확률 서버에서 포획 성공 여부를 결정.
+	bCaptureSuccessed = FMath::FRandRange(0.0f, 100.0f) < 20.0f; // 20% 확률 서버에서 포획 성공 여부를 결정.
 
 	if (bCaptureSuccessed)
 	{

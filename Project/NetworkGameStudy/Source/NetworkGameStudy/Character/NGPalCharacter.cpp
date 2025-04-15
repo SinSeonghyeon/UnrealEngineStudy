@@ -58,10 +58,10 @@ void ANGPalCharacter::MulticastRPCTryCapture_Implementation()
 	{
 		CachedPalController->PauseBehaviorTree();
 	}
-	else
-	{
-		StartCapture();
-	}
+
+	// 서버에서는 동작할필요 없지만, 같이 없애주지 않으면 서버의 콜라이더로 인해 이상한 현상이 발생합니다.
+	// 임시로 클라와 같은 동작을 수행하도록 변경합니다.
+	StartCapture();
 }
 
 void ANGPalCharacter::MulticastRPCCancelCapture_Implementation()
@@ -70,10 +70,10 @@ void ANGPalCharacter::MulticastRPCCancelCapture_Implementation()
 	{
 		CachedPalController->ResumeBehaviorTree();
 	}
-	else
-	{
-		StartEscape();
-	}
+
+	// 서버에서는 동작할필요 없지만, 같이 없애주지 않으면 서버의 콜라이더로 인해 이상한 현상이 발생합니다.
+	// 임시로 클라와 같은 동작을 수행하도록 변경합니다.
+	StartEscape();
 }
 
 void ANGPalCharacter::SuccessCapture()
@@ -112,6 +112,7 @@ void ANGPalCharacter::PlayCapture()
 
 void ANGPalCharacter::StartEscape()
 {
+	SetActorScale3D(FVector(0.01f));
 	GetMesh()->SetRelativeScale3D(OriginMeshScale);
 	EscapeTimer = InitTime;
 	GetWorldTimerManager().SetTimer(EscapeHandle, this, &ANGPalCharacter::PlayEscape, DeltaTime, true);
