@@ -77,6 +77,14 @@ void ANGPlayerCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& O
 	DOREPLIFETIME(ANGPlayerCharacter, IsPalSphereLockOn);
 }
 
+void ANGPlayerCharacter::InitializeStatComponent()
+{
+	if (UUIManagerWorldSubsystem* UIManager = GetWorld()->GetSubsystem<UUIManagerWorldSubsystem>())
+	{
+		NGStatComponent->Initialize(UIManager->GeMainWidgetInstance());
+	}
+}
+
 void ANGPlayerCharacter::OnRep_ChangedFocusStack()
 {
 	if (TargetFocusStack_Rep.IsEmpty())

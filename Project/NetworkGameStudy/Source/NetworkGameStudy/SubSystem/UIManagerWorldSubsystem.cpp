@@ -7,7 +7,7 @@
 UUIManagerWorldSubsystem::UUIManagerWorldSubsystem()
 {
 	// 클래스 로드
-	static ConstructorHelpers::FClassFinder<UUserWidget> MainUIBPClass(TEXT("/Script/UMGEditor.WidgetBlueprint'/Game/00_Game/UI/Main_Panel.Main_Panel_C'"));
+	static ConstructorHelpers::FClassFinder<UNGStatWidgetBase> MainUIBPClass(TEXT("/Script/UMGEditor.WidgetBlueprint'/Game/00_Game/UI/BP_Main_Panel.BP_Main_Panel_C'"));
 	if (MainUIBPClass.Succeeded())
 	{
 		MainUIClass = MainUIBPClass.Class;
@@ -31,7 +31,7 @@ void UUIManagerWorldSubsystem::ShowMainUI(APlayerController* PlayerController)
 	{
 		if (!PlayerController) return;
 
-		MainUIInstance = CreateWidget<UUserWidget>(PlayerController, MainUIClass);
+		MainUIInstance = CreateWidget<UNGStatWidgetBase>(PlayerController, MainUIClass);
 		if (MainUIInstance)
 		{
 			MainUIInstance->AddToViewport();

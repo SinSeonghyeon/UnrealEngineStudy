@@ -13,6 +13,7 @@ class UInputMappingContext;
 class UInputAction;
 class UNGAnimInstance;
 struct FInputActionValue;
+class UNGStatComponent;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
 
@@ -56,12 +57,22 @@ public:
 	void ServerRPCAttack_HitCheck(FVector StartPos, float Radius);
 
 public:
+	virtual void BeginPlay() override;
+
 	virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) override;
 
-protected:
-	 virtual void PostInitializeComponents() override;
+	// 서버에서 호출됩니다.
+	virtual void DieCharacter();
+
+	virtual void InitializeStatComponent() {};
 
 protected:
+	virtual void PostInitializeComponents() override;
+
+protected:
+	UPROPERTY(VisibleAnywhere)
+	TObjectPtr<UNGStatComponent> NGStatComponent;
+
 	// -------------------- 공격과 관련된 변수들 ----------------------
 	// 현재 공격이 가능한지를 저장하는 변수
 	bool bCanAttack = true;

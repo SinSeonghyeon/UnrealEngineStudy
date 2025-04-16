@@ -4,6 +4,8 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Perception/AISense_Damage.h"
 #include "../NGGameInstance.h"
+#include "Components/WidgetComponent.h"
+#include "../UI/NGHeadUpWidget.h"
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -13,6 +15,17 @@ ANGPalCharacter::ANGPalCharacter()
 {
 	bUseControllerRotationYaw = true;
 	
+	// 클래스 로드
+	static ConstructorHelpers::FClassFinder<UUserWidget> HeadUpWidgetBPClass(TEXT("/Script/UMGEditor.WidgetBlueprint'/Game/00_Game/UI/BP_HeadUpWidget.BP_HeadUpWidget_C'"));
+	if (HeadUpWidgetBPClass.Succeeded())
+	{
+		HeadUpWidgetComponent = CreateDefaultSubobject<UWidgetComponent>(TEXT("HeadUpWidgetComponent"));
+		HeadUpWidgetComponent->SetupAttachment(RootComponent);
+		HeadUpWidgetComponent->SetDrawSize(FVector2D(200.0f, 10.0f));
+		HeadUpWidgetComponent->SetWidgetSpace(EWidgetSpace::Screen);
+		HeadUpWidgetComponent->SetWidgetClass(HeadUpWidgetBPClass.Class);
+	}
+
 	Tags.Add(TEXT("PalCharacter"));
 }
 
@@ -38,6 +51,9 @@ void ANGPalCharacter::BeginPlay()
 	CachedMaterials = GetMesh()->GetMaterials();
 
 	OriginMeshScale = GetMesh()->GetRelativeScale3D();
+
+	if(HeadUpWidgetComponent)
+		HeadUpWidgetComponent->SetRelativeLocation(FVector(0.0f, 0.0f, GetCapsuleComponent()->GetScaledCapsuleHalfHeight() + 30.0f));
 }
 
 void ANGPalCharacter::PossessedBy(AController* NewController)
@@ -45,6 +61,12 @@ void ANGPalCharacter::PossessedBy(AController* NewController)
 	Super::PossessedBy(NewController);
 
 	CachedPalController = Cast<ANGPalController>(NewController);
+}
+
+void ANGPalCharacter::InitializeStatComponent()
+{
+	if(HeadUpWidgetComponent)
+		NGStatComponent->Initialize(Cast<UNGStatWidgetBase>(HeadUpWidgetComponent->GetUserWidgetObject()));
 }
 
 void ANGPalCharacter::UpdateMaxWalkSpeed(float NewSpeed)

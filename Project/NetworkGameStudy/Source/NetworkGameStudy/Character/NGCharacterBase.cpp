@@ -46,6 +46,9 @@ ANGCharacterBase::ANGCharacterBase()
 	GetCharacterMovement()->BrakingDecelerationFalling = 1500.0f;
 
 	GetMesh()->SetCollisionProfileName(TEXT("NoCollision"));
+
+	NGStatComponent = CreateDefaultSubobject<UNGStatComponent>(TEXT("NGStatComponent"));
+	NGStatComponent->OnHealthZero.AddUObject(this, &ANGCharacterBase::DieCharacter);
 }
 
 void ANGCharacterBase::PostInitializeComponents()
@@ -92,7 +95,6 @@ void ANGCharacterBase::ServerRPCAttack_HitCheck_Implementation(FVector StartPos,
 {
 	TArray<FOverlapResult> HitResults;
 
-	float Damage = 30.0f;
 	FDamageEvent DamageEvent;
 
 	bool bHit = GetWorld()->OverlapMultiByObjectType(HitResults, StartPos, FQuat::Identity, FCollisionObjectQueryParams::AllObjects, FCollisionShape::MakeSphere(Radius));
@@ -107,10 +109,17 @@ void ANGCharacterBase::ServerRPCAttack_HitCheck_Implementation(FVector StartPos,
 			AActor* HitActor = Hit.GetActor();
 			if (this != HitActor)
 			{
-				HitActor->TakeDamage(Damage, DamageEvent, this->GetController(), this);
+				HitActor->TakeDamage(NGStatComponent->GetDamage(), DamageEvent, this->GetController(), this);
 			}
 		}
 	}
+}
+
+void ANGCharacterBase::BeginPlay()
+{
+	Super::BeginPlay();
+
+	InitializeStatComponent();
 }
 
 // 이 함수는 서버에서 호출되고 있습니다.
@@ -120,7 +129,18 @@ float ANGCharacterBase::TakeDamage(float DamageAmount, FDamageEvent const& Damag
 
 	MultiCastRPCPlayHit_PlayAnim();
 
+	NGStatComponent->SetCurrentHP(NGStatComponent->GetCurrentHP() - ActualDamage);
+
 	return ActualDamage;
+}
+
+void ANGCharacterBase::DieCharacter()
+{
+	// 사망 관련 코드 추가 필요.
+	// 렉돌
+	// 컨트롤러 뻇기.
+	// 콜리전 제거 등..
+	// UI 제거..
 }
 
 void ANGCharacterBase::ServerRPCAttack_PlayAnim_Implementation(float AttackStartTime)

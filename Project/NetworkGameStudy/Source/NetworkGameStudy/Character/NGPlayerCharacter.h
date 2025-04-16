@@ -64,6 +64,8 @@ protected:
 	virtual void PostInitializeComponents() override;
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
+	virtual void InitializeStatComponent() override;
 private:
 	// Controller 기준으로 캐릭터 Yaw값을 회전시키는 포커스 요청을 기록하는 스택입니다.
 	// 스택이 비어있다면 무브먼트 기준으로 변경됩니다.

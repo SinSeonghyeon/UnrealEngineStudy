@@ -8,6 +8,7 @@
 #include "NGPalCharacter.generated.h"
 
 class ANGPalController;
+class UWidgetComponent;
 
 UCLASS(config=Game)
 class ANGPalCharacter : public ANGCharacterBase
@@ -22,6 +23,8 @@ public:
 	virtual void BeginPlay() override;
 
 	virtual void PossessedBy(AController* NewController) override;
+
+	virtual void InitializeStatComponent() override;
 
     UFUNCTION(BlueprintCallable, Category = "NGCustom")
     void UpdateMaxWalkSpeed(float NewSpeed);
@@ -47,6 +50,9 @@ private:
 	void PlayEscape();
 
 private:
+	UPROPERTY(VisibleAnywhere)
+	TObjectPtr<UWidgetComponent> HeadUpWidgetComponent;
+
 	UPROPERTY(Transient)
 	TArray<TObjectPtr<UMaterialInterface>> CachedMaterials;
 
