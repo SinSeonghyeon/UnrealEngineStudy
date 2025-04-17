@@ -11,7 +11,7 @@
 // Sets default values
 ANGBreakableProp::ANGBreakableProp()
 {
-	CurrentHP = 100;
+	CurrentHP = 500;
 
 	PropMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("PropMesh"));
 	PropMesh->SetupAttachment(RootComponent);

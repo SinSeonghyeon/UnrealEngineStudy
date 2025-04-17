@@ -24,18 +24,25 @@ public:
 
 	virtual void PossessedBy(AController* NewController) override;
 
+	virtual void UnPossessed() override;
+
 	virtual void InitializeStatComponent() override;
 
-    UFUNCTION(BlueprintCallable, Category = "NGCustom")
-    void UpdateMaxWalkSpeed(float NewSpeed);
-
-	TObjectPtr<ANGCharacterBase> GetPalOwner() const { return PalOwner; };
-
+public:
 	UFUNCTION(NetMulticast, Reliable)
 	void MulticastRPCTryCapture();
 
 	UFUNCTION(NetMulticast, Reliable)
 	void MulticastRPCCancelCapture();
+
+    UFUNCTION(BlueprintCallable, Category = "NGCustom")
+    void UpdateMaxWalkSpeed(float NewSpeed);
+
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastRPCSetVisibilityHeadupWidget(bool bVisibility);
+
+public:
+	TObjectPtr<ANGCharacterBase> GetPalOwner() const { return PalOwner; };
 
 	void SuccessCapture();
 
@@ -49,6 +56,11 @@ private:
 	// 팰스피어에서 탈출하는 애니메이션 재생
 	void PlayEscape();
 
+	// 적을 발견했을 때 호출되는 이벤트
+	void OnFindTarget();
+
+	// 적을 놓쳤을 때 호출되는 이벤트
+	void OnLostTarget();
 private:
 	UPROPERTY(VisibleAnywhere)
 	TObjectPtr<UWidgetComponent> HeadUpWidgetComponent;

@@ -11,10 +11,12 @@
 //////////////////////////////////////////////////////////////////////////
 // ANGPalCharacter
 
+const FName PalCollisionProfileFName = TEXT("Pawn");
+
 ANGPalCharacter::ANGPalCharacter()
 {
 	bUseControllerRotationYaw = true;
-	
+
 	// 클래스 로드
 	static ConstructorHelpers::FClassFinder<UUserWidget> HeadUpWidgetBPClass(TEXT("/Script/UMGEditor.WidgetBlueprint'/Game/00_Game/UI/BP_HeadUpWidget.BP_HeadUpWidget_C'"));
 	if (HeadUpWidgetBPClass.Succeeded())
@@ -24,7 +26,10 @@ ANGPalCharacter::ANGPalCharacter()
 		HeadUpWidgetComponent->SetDrawSize(FVector2D(200.0f, 10.0f));
 		HeadUpWidgetComponent->SetWidgetSpace(EWidgetSpace::Screen);
 		HeadUpWidgetComponent->SetWidgetClass(HeadUpWidgetBPClass.Class);
+		HeadUpWidgetComponent->SetVisibility(false);
 	}
+
+	GetCapsuleComponent()->SetCollisionProfileName(PalCollisionProfileFName);
 
 	Tags.Add(TEXT("PalCharacter"));
 }
@@ -52,7 +57,7 @@ void ANGPalCharacter::BeginPlay()
 
 	OriginMeshScale = GetMesh()->GetRelativeScale3D();
 
-	if(HeadUpWidgetComponent)
+	if (HeadUpWidgetComponent)
 		HeadUpWidgetComponent->SetRelativeLocation(FVector(0.0f, 0.0f, GetCapsuleComponent()->GetScaledCapsuleHalfHeight() + 30.0f));
 }
 
@@ -60,13 +65,25 @@ void ANGPalCharacter::PossessedBy(AController* NewController)
 {
 	Super::PossessedBy(NewController);
 
-	CachedPalController = Cast<ANGPalController>(NewController);
+	if (CachedPalController = Cast<ANGPalController>(NewController))
+	{
+		CachedPalController->OnFindTarget.AddUObject(this, &ANGPalCharacter::OnFindTarget);
+		CachedPalController->OnLostTarget.AddUObject(this, &ANGPalCharacter::OnLostTarget);
+	}
+}
+
+void ANGPalCharacter::UnPossessed()
+{
+	CachedPalController->OnFindTarget.RemoveAll(this);
+	CachedPalController->OnLostTarget.RemoveAll(this);
 }
 
 void ANGPalCharacter::InitializeStatComponent()
 {
-	if(HeadUpWidgetComponent)
+	if (HeadUpWidgetComponent)
+	{
 		NGStatComponent->Initialize(Cast<UNGStatWidgetBase>(HeadUpWidgetComponent->GetUserWidgetObject()));
+	}
 }
 
 void ANGPalCharacter::UpdateMaxWalkSpeed(float NewSpeed)
@@ -108,7 +125,7 @@ void ANGPalCharacter::StartCapture()
 	CaptureTimer = InitTime;
 
 	TObjectPtr<UMaterial> EmssiveMeterial = UNGGameInstance::GetEmissiveMaterial(GetWorld());
-
+	GetCapsuleComponent()->SetCollisionProfileName(TEXT("NoCollision"));
 	for (int32 i = 0; i < CachedMaterials.Num(); ++i)
 	{
 		GetMesh()->SetMaterial(i, EmssiveMeterial);
@@ -135,6 +152,7 @@ void ANGPalCharacter::PlayCapture()
 void ANGPalCharacter::StartEscape()
 {
 	SetActorScale3D(FVector(0.01f));
+	GetCapsuleComponent()->SetCollisionProfileName(PalCollisionProfileFName);
 	GetMesh()->SetRelativeScale3D(OriginMeshScale);
 	EscapeTimer = InitTime;
 	GetWorldTimerManager().SetTimer(EscapeHandle, this, &ANGPalCharacter::PlayEscape, DeltaTime, true);
@@ -161,5 +179,24 @@ void ANGPalCharacter::PlayEscape()
 		{
 			GetMesh()->SetMaterial(i, CachedMaterials[i]);
 		}
+	}
+}
+
+void ANGPalCharacter::OnFindTarget()
+{
+	MulticastRPCSetVisibilityHeadupWidget(true);
+}
+
+void ANGPalCharacter::OnLostTarget()
+{
+	MulticastRPCSetVisibilityHeadupWidget(false);
+}
+
+void ANGPalCharacter::MulticastRPCSetVisibilityHeadupWidget_Implementation(bool bVisibility)
+{
+	NG_LOG(LogTemp, Log, TEXT("Begin"));
+	if (HeadUpWidgetComponent)
+	{
+		HeadUpWidgetComponent->SetVisibility(bVisibility);
 	}
 }

@@ -36,18 +36,15 @@ void ANGPalController::OnPossess(APawn* InPawn)
 {
 	Super::OnPossess(InPawn);
 
-	TObjectPtr<ANGPalCharacter> PalCharacter = Cast<ANGPalCharacter>(InPawn);
-
-	if (PalCharacter)
+	if (MyPalCharacter = Cast<ANGPalCharacter>(InPawn))
 	{
-		if (PalCharacter->GetPalOwner())
+		if (MyPalCharacter->GetPalOwner())
 			RunBehaviorTree(BehaviorTree_OwnedPal);
 		else
 			RunBehaviorTree(BehaviorTree_UnOwnedPal);
 
 		CachedBehaviorTreeComponent = GetComponentByClass<UBehaviorTreeComponent>();
 	}
-
 }
 
 void ANGPalController::OnTargetPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus)
@@ -59,6 +56,8 @@ void ANGPalController::OnTargetPerceptionUpdated(AActor* Actor, FAIStimulus Stim
 	{
 		if (Stimulus.WasSuccessfullySensed())
 		{
+			if(!CachedBehaviorTreeComponent->IsPaused())
+				OnFindTarget.Broadcast();
 			//NG_LOG(LogTemp, Log, TEXT("FindTarget"));
 			GetWorldTimerManager().ClearTimer(EnemyTimer);
 
@@ -68,7 +67,7 @@ void ANGPalController::OnTargetPerceptionUpdated(AActor* Actor, FAIStimulus Stim
 		else
 		{
 			//NG_LOG(LogTemp, Log, TEXT("LostTarget"));
-			GetWorldTimerManager().SetTimer(EnemyTimer, this, &ANGPalController::StartEnemyTimer, LineOfSightTimer, false);
+			GetWorldTimerManager().SetTimer(EnemyTimer, this, &ANGPalController::StartEnemyResetTargetTimer, LineOfSightTimer, false);
 		}
 	}
 	else
@@ -77,8 +76,10 @@ void ANGPalController::OnTargetPerceptionUpdated(AActor* Actor, FAIStimulus Stim
 	}
 }
 
-void ANGPalController::StartEnemyTimer()
+void ANGPalController::StartEnemyResetTargetTimer()
 {
+	OnLostTarget.Broadcast();
+
 	Blackboard->SetValueAsBool(TEXT("HasLineOfSight"), false);
 	Blackboard->SetValueAsObject(TEXT("TargetActor"), nullptr);
 }

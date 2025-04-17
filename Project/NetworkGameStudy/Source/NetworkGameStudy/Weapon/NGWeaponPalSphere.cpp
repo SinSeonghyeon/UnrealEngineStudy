@@ -44,10 +44,11 @@ void ANGWeaponPalSphere::BeginPlay()
 	Super::BeginPlay();
 
 	// 서버에서 전달받도록
-	if(GetNetMode() != ENetMode::NM_Client)
+	if (GetNetMode() != ENetMode::NM_Client)
+	{
 		CollisionComponent->OnComponentHit.AddDynamic(this, &ANGWeaponPalSphere::OnHit);
-
-	GetWorldTimerManager().SetTimer(DestroyTimeHandle, this, &ANGWeaponPalSphere::DestroyPalSphere, 3.0f, false);
+		GetWorldTimerManager().SetTimer(DestroyTimeHandle, this, &ANGWeaponPalSphere::DestroyPalSphere, 3.0f, false);
+	}
 }
 
 void ANGWeaponPalSphere::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
@@ -59,7 +60,9 @@ void ANGWeaponPalSphere::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherA
 	{
 		NG_LOG(LogTemp, Warning, TEXT("Hit: %s"), *OtherActor->GetName());
 
+		// 함수에서 TargetPal을 캐싱합니다. 여기서 하는 이유는 서버에도 캐싱하기 위함.
 		MultiCastRPCStartCaptureSequence(Cast<ANGPalCharacter>(OtherActor));
+		TargetPal->MulticastRPCSetVisibilityHeadupWidget(false);
 	}
 }
 
@@ -168,7 +171,10 @@ void ANGWeaponPalSphere::ServerRPCEvaluateCaptureResult_Implementation()
 	else
 	{
 		// 펠을 다시 스폰.
+		TObjectPtr<ANGPlayerCharacter> OwnerPlayer = Cast<ANGPlayerCharacter>(GetOwner()); 
 		TargetPal->MulticastRPCCancelCapture();
+		FDamageEvent DamageEvent;
+		TargetPal->TakeDamage(0.0f, DamageEvent, OwnerPlayer->GetController(), OwnerPlayer);
 	}
 	DestroyPalSphere();
 }

@@ -10,6 +10,8 @@ class UBehaviorTree;
 struct FAIStimulus;
 class UBehaviorTreeComponent;
 
+DECLARE_MULTICAST_DELEGATE(FOnFindTarget);
+DECLARE_MULTICAST_DELEGATE(FOnLostTarget);
 /**
  * 
  */
@@ -33,7 +35,11 @@ protected:
 	UFUNCTION()
 	void OnTargetPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus);
 
-	void StartEnemyTimer();
+	void StartEnemyResetTargetTimer();
+
+public:
+	FOnFindTarget OnFindTarget;
+	FOnLostTarget OnLostTarget;
 
 private:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = AI, meta = (AllowPrivateAccess = "true"))
@@ -46,6 +52,8 @@ private:
 	TObjectPtr<UAIPerceptionComponent> AIPerceptionComponent;
 
 	TObjectPtr<UBehaviorTreeComponent> CachedBehaviorTreeComponent;
+
+	TObjectPtr<ANGPalCharacter> MyPalCharacter;
 
 	FTimerHandle EnemyTimer;
 
