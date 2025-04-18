@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
-#include "NGCharacterBase.h"
+#include "../NGCharacterBase.h"
 #include "NGPalCharacter.generated.h"
 
 class ANGPalController;

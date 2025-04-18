@@ -18,5 +18,7 @@ public class NetworkGameStudy : ModuleRules
 			"GeometryCollectionEngine",
 			"UMG"
 		});
+
+		PublicIncludePaths.Add("NetworkGameStudy");
 	}
 }

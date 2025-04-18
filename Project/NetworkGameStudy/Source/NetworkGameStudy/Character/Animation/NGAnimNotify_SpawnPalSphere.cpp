@@ -2,7 +2,7 @@
 
 
 #include "NGAnimNotify_SpawnPalSphere.h"
-#include "../NGPlayerCharacter.h"
+#include "../Player/NGPlayerCharacter.h"
 
 void UNGAnimNotify_SpawnPalSphere::Notify(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation)
 {

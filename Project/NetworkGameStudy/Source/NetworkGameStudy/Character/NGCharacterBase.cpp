@@ -115,6 +115,13 @@ void ANGCharacterBase::ServerRPCAttack_HitCheck_Implementation(FVector StartPos,
 	}
 }
 
+void ANGCharacterBase::MulticastRPCDoRagdoll_Implementation()
+{
+	GetCapsuleComponent()->SetCollisionProfileName(TEXT("NoCollision"));
+	GetMesh()->SetCollisionProfileName(TEXT("Ragdoll"));
+	GetMesh()->SetSimulatePhysics(true);
+}
+
 void ANGCharacterBase::BeginPlay()
 {
 	Super::BeginPlay();
@@ -129,18 +136,21 @@ float ANGCharacterBase::TakeDamage(float DamageAmount, FDamageEvent const& Damag
 
 	MultiCastRPCPlayHit_PlayAnim();
 
-	NGStatComponent->SetCurrentHP(NGStatComponent->GetCurrentHP() - ActualDamage);
+	NGStatComponent->TakeDamage(ActualDamage);
 
 	return ActualDamage;
 }
 
 void ANGCharacterBase::DieCharacter()
 {
-	// 사망 관련 코드 추가 필요.
-	// 렉돌
-	// 컨트롤러 뻇기.
-	// 콜리전 제거 등..
-	// UI 제거..
+	NG_LOG(LogTemp, Log, TEXT("Begin"));
+	MulticastRPCDoRagdoll();
+	//기본으로 제공해주는 Ragdoll용 CollisionProfile로 설정
+
+	if (GetController())
+	{
+		GetController()->UnPossess();
+	}
 }
 
 void ANGCharacterBase::ServerRPCAttack_PlayAnim_Implementation(float AttackStartTime)

@@ -6,6 +6,8 @@
 #include "Subsystems/WorldSubsystem.h"
 #include "UIManagerWorldSubsystem.generated.h"
 
+class UNGMainPanelWidget;
+
 /**
  *
  */
@@ -17,24 +19,19 @@ public:
 	UUIManagerWorldSubsystem();
 
 public:
-
-
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 	virtual void Deinitialize() override;
 
-	UFUNCTION(BlueprintCallable, Category = "UI")
 	void ShowMainUI(APlayerController* PlayerController);
 
-	UFUNCTION(BlueprintCallable, Category = "UI")
 	void HideMainUI();
 
-	const TObjectPtr<UNGStatWidgetBase>& GeMainWidgetInstance() { return MainUIInstance; }
+	void ToggleBuildingContextUI();
+
+	const TObjectPtr<UNGMainPanelWidget>& GeMainWidgetInstance() { return MainUIInstance; }
 protected:
 	UPROPERTY(EditDefaultsOnly, Category = "UI")
-	TSubclassOf<UNGStatWidgetBase> MainUIClass;
+	TSubclassOf<UNGMainPanelWidget> MainUIClass;
 
-	UPROPERTY()
-	TObjectPtr<UNGStatWidgetBase> MainUIInstance;
-
-
+	TObjectPtr<UNGMainPanelWidget> MainUIInstance;
 };

@@ -5,7 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 #include "Logging/LogMacros.h"
-#include "NGCharacterBase.h"
+#include "../NGCharacterBase.h"
 #include "NGPlayerCharacter.generated.h"
 
 class USpringArmComponent;
@@ -33,7 +33,7 @@ public:
 
 	UFUNCTION(Server, Reliable)
 	void ServerRPCSpawnPalSphere();
-protected:
+
 	// ---------------- EnhancedInput 관련 함수 ---------------------------
 	/** Called for movement input */
 	void Move(const FInputActionValue& Value);
@@ -53,11 +53,8 @@ protected:
 	void LockOnCancel(const FInputActionValue& Value);
 
 	void ThrowPalSphere();
-
+	// ---------------- EnhancedInput 관련 함수 ---------------------------
 protected:
-	// APawn interface
-	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
-	
 	// To add mapping context
 	virtual void BeginPlay();
 
@@ -105,30 +102,6 @@ private:
 	/** Follow camera */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UCameraComponent> FollowCamera;
-	
-	/** MappingContext */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
-	TObjectPtr<UInputMappingContext> DefaultMappingContext;
-
-	/** Jump Input Action */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
-	TObjectPtr<UInputAction> JumpAction;
-
-	/** Move Input Action */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
-	TObjectPtr<UInputAction> MoveAction;
-
-	/** Look Input Action */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
-	TObjectPtr<UInputAction> LookAction;
-
-	/** Attack Input Action */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
-	TObjectPtr<UInputAction> AttackAction;
-
-	/** LockOn Input Action */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
-	TObjectPtr<UInputAction> LockOnAction;
 
 	// 무기 스켈레탈 메시 컴포넌트
 	UPROPERTY(Transient)

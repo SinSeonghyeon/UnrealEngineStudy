@@ -10,10 +10,10 @@
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "InputActionValue.h"
-#include "Animation/NGAnimInstance.h"
+#include "Character/Animation/NGAnimInstance.h"
 #include "EngineUtils.h"
 #include "GameFramework/GameStateBase.h"
-#include "../NetworkGameStudy.h"
+#include "NetworkGameStudy.h"
 #include "Engine/OverlapResult.h"
 #include "Engine/DamageEvents.h"
 #include "Net/UnrealNetwork.h"
@@ -125,48 +125,6 @@ void ANGPlayerCharacter::OnRep_ChangedIsPalSphereLockOn()
 		GetCachedAnimInstance()->PlayLockOn();
 	else
 		GetCachedAnimInstance()->StopLockOn();
-}
-
-//////////////////////////////////////////////////////////////////////////
-// Input
-
-void ANGPlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
-{
-	// Add Input Mapping Context
-	if (APlayerController* PlayerController = Cast<APlayerController>(GetController()))
-	{
-		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
-		{
-			Subsystem->AddMappingContext(DefaultMappingContext, 0);
-		}
-	}
-
-	// Set up action bindings
-	if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent)) {
-
-		// Jumping
-		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Started, this, &ACharacter::Jump);
-		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Completed, this, &ACharacter::StopJumping);
-
-		// Moving
-		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &ANGPlayerCharacter::Move);
-
-		// Looking
-		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &ANGPlayerCharacter::Look);
-
-		// Attack
-		EnhancedInputComponent->BindAction(AttackAction, ETriggerEvent::Started, this, &ANGPlayerCharacter::AttackStarted);
-		EnhancedInputComponent->BindAction(AttackAction, ETriggerEvent::Triggered, this, &ANGPlayerCharacter::AttackTriggered);
-		EnhancedInputComponent->BindAction(AttackAction, ETriggerEvent::Completed, this, &ANGPlayerCharacter::AttackCompleted);
-
-		// LockOn
-		EnhancedInputComponent->BindAction(LockOnAction, ETriggerEvent::Started, this, &ANGPlayerCharacter::LockOn);
-		EnhancedInputComponent->BindAction(LockOnAction, ETriggerEvent::Completed, this, &ANGPlayerCharacter::LockOnCancel);
-	}
-	else
-	{
-		UE_LOG(LogTemplateCharacter, Error, TEXT("'%s' Failed to find an Enhanced Input component! This template is built to use the Enhanced Input system. If you intend to use the legacy system, then you will need to update this C++ file."), *GetNameSafe(this));
-	}
 }
 
 //////////////////////////////////////////////////////////////////////////

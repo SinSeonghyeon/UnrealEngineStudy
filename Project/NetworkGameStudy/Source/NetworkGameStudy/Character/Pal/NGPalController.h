@@ -32,6 +32,8 @@ public:
 protected:
 	virtual void OnPossess(APawn* InPawn) override;
 	
+	virtual void OnUnPossess() override;
+
 	UFUNCTION()
 	void OnTargetPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus);
 

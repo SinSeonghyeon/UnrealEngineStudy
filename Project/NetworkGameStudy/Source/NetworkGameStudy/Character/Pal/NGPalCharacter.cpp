@@ -3,9 +3,9 @@
 #include "NGPalCharacter.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Perception/AISense_Damage.h"
-#include "../NGGameInstance.h"
+#include "../../NGGameInstance.h"
 #include "Components/WidgetComponent.h"
-#include "../UI/NGHeadUpWidget.h"
+#include "../../UI/NGHeadUpWidget.h"
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -56,6 +56,8 @@ void ANGPalCharacter::BeginPlay()
 	CachedMaterials = GetMesh()->GetMaterials();
 
 	OriginMeshScale = GetMesh()->GetRelativeScale3D();
+
+	NGStatComponent->SetMaxHP(500);
 
 	if (HeadUpWidgetComponent)
 		HeadUpWidgetComponent->SetRelativeLocation(FVector(0.0f, 0.0f, GetCapsuleComponent()->GetScaledCapsuleHalfHeight() + 30.0f));

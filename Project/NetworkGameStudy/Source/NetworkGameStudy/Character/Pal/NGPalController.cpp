@@ -4,8 +4,8 @@
 #include "NGPalCharacter.h"
 #include "Perception/AIPerceptionComponent.h"
 #include "AIController.h"
-#include "BehaviorTree\BlackboardComponent.h"
-#include "../NetworkGameStudy.h"
+#include "BehaviorTree/BlackboardComponent.h"
+#include "NetworkGameStudy.h"
 
 ANGPalController::ANGPalController()
 {
@@ -45,6 +45,14 @@ void ANGPalController::OnPossess(APawn* InPawn)
 
 		CachedBehaviorTreeComponent = GetComponentByClass<UBehaviorTreeComponent>();
 	}
+}
+
+
+void ANGPalController::OnUnPossess()
+{
+	OnLostTarget.Broadcast();
+
+	Super::OnUnPossess();
 }
 
 void ANGPalController::OnTargetPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus)

@@ -18,7 +18,11 @@ public:
 	UNGStatComponent();
 
 public:
-	void SetMaxHP(int32 InHP) { MaxHP = InHP; }
+	void SetMaxHP(int32 InHP) 
+	{ 
+		MaxHP = InHP;
+		CurrentHP = MaxHP < CurrentHP ? MaxHP : CurrentHP;
+	}
 	int32 GetMaxHP() const { return MaxHP; }
 
 	void SetCurrentHP(int32 InHP) { CurrentHP = InHP; }

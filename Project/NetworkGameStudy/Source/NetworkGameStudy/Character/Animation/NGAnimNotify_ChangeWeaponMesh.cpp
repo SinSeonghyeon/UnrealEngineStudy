@@ -2,7 +2,7 @@
 
 
 #include "NGAnimNotify_ChangeWeaponMesh.h"
-#include "../NGPlayerCharacter.h"
+#include "../Player/NGPlayerCharacter.h"
 
 void UNGAnimNotify_ChangeWeaponMesh::Notify(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation)
 {

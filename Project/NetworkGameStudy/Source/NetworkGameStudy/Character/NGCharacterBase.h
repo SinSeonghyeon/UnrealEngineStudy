@@ -56,6 +56,8 @@ public:
 	UFUNCTION(Server, Reliable)
 	void ServerRPCAttack_HitCheck(FVector StartPos, float Radius);
 
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastRPCDoRagdoll();
 public:
 	virtual void BeginPlay() override;
 
