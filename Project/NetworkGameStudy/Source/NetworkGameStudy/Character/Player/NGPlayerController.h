@@ -7,6 +7,7 @@
 #include "NGPlayerController.generated.h"
 
 class ANGPlayerCharacter;
+class UUIManagerWorldSubsystem;
 
 /**
  * 플레이어의 컨트롤러입니다.
@@ -17,6 +18,29 @@ class NETWORKGAMESTUDY_API ANGPlayerController : public APlayerController
 {
 	GENERATED_BODY()
 	
+
+public:
+	// 임시로 스태틱 메시를 변수로 넘겨주고 있지만, 추후에는 건축 정보를 넘겨주는 식으로 변경하여야 합니다.
+	void SetBuildMode(bool bIsSet, const TObjectPtr<UStaticMesh>& BuildingMesh = nullptr);
+
+	void AddInteractionActor(TWeakObjectPtr<ANGInteractionActorBase> InteractionActor);
+	void RemoveInteractionActor(TWeakObjectPtr<ANGInteractionActorBase> InteractionActor);
+
+	UFUNCTION(Server, Reliable)
+	void ServerRPCRequestDestroyActor(AActor* Actor);
+
+private:
+	UFUNCTION(Server, Reliable)
+	void ServerRPCSpawnPreviewActor(UStaticMesh* BuildingMesh);
+
+	UFUNCTION(Server, Reliable)
+	void ServerRPCDestroyPreviewActor();
+
+	UFUNCTION(Server, Reliable)
+	void ServerRPCConfirmPreviewActor();
+
+	UFUNCTION(Server, Unreliable)
+	void ServerRPCMovePreviewActor(FVector Location);
 protected:
 	virtual void OnPossess(APawn* aPawn) override;
 	
@@ -25,6 +49,12 @@ protected:
 	virtual void BeginPlay() override;
 	
 	virtual void SetupInputComponent() override;
+
+	virtual void Tick(float DeltaTime) override;
+
+	void SetEnhancedInput(TObjectPtr<UEnhancedInputComponent> EnhancedInputComponent);
+
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 protected:
 	void Jump();
@@ -37,6 +67,11 @@ protected:
 	void LockOn(const FInputActionValue& Value);
 	void LockOnCancel(const FInputActionValue& Value);
 	void ToggleBuildingWidget();
+	void Interaction();
+	void UIClick();
+	void UIMouseMove(const FInputActionValue& Value);
+	void BuildConfirm();
+	void BuildCancle();
 
 	TObjectPtr<ANGPlayerCharacter>& GetPlayerCharacter();
 
@@ -46,6 +81,14 @@ protected:
 	/** MappingContext */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UInputMappingContext> DefaultMappingContext;
+
+	/** MappingContext */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UInputMappingContext> UIMappingContext;
+
+	/** MappingContext */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UInputMappingContext> BuildMappingContext;
 
 	/** Jump Input Action */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
@@ -70,4 +113,35 @@ protected:
 	/** LockOn Input Action */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UInputAction> BuildingWidgetToggleAction;
+
+	/** Click Input Action */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UInputAction> UIClickAction;
+
+	/** MouseMove Input Action */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UInputAction> UIMouseMoveAction;
+
+	/** BuildConfirm Input Action */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UInputAction> BuildConfirmAction;
+
+	/** BuildCancle Input Action */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UInputAction> BuildCancleAction;
+	
+	/** IntractionAction Input Action */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UInputAction> IntractionAction;
+
+private:
+	TObjectPtr<UUIManagerWorldSubsystem> CachedUIManager;
+
+	UPROPERTY(Replicated)
+	TObjectPtr<ANGBuildingPreviewActor> BuildingPreviewActor;
+
+	TSet<TWeakObjectPtr<ANGInteractionActorBase>> InteractionActorSet;
+	TWeakObjectPtr<ANGInteractionActorBase> CurrentInteractionActor;
+
+	
 };

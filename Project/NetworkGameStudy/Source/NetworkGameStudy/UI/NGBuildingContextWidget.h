@@ -4,20 +4,69 @@
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
+#include "NGInputWidgetBase.h"
 #include "NGBuildingContextWidget.generated.h"
+
+class UImage;
+class UTexture2D;
+class UStaticMesh;
+
+USTRUCT()
+struct FDirectionHandler
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere)
+	TObjectPtr<UTexture2D> Texture;
+
+	UPROPERTY(EditAnywhere)
+	TObjectPtr<UStaticMesh> Mesh;
+
+	UPROPERTY(VisibleAnywhere)
+	float MinAngle;         // 시작 각도 (inclusive)
+	UPROPERTY(VisibleAnywhere)
+	float MaxAngle;			// 끝 각도 (exclusive)
+	UPROPERTY(VisibleAnywhere)
+	float BaseAngle;			// 기준 각도
+};
 
 /**
  *
  */
 UCLASS()
-class NETWORKGAMESTUDY_API UNGBuildingContextWidget : public UUserWidget
+class NETWORKGAMESTUDY_API UNGBuildingContextWidget : public UNGInputWidgetBase
 {
 	GENERATED_BODY()
 
+public:
+	UNGBuildingContextWidget(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get());
 
 protected:
-	virtual void NativeTick(const FGeometry& MyGeometry, float InDeltaTime) override;
+	virtual bool InputMouseClick() override;
+	virtual bool InputMouseMove(const FInputActionValue& Value) override;
+	virtual void NativeConstruct() override;
+protected:
+    UPROPERTY(meta = (BindWidget))
+    TObjectPtr<UImage> HightlightImgae;
 
-	virtual FReply NativeOnMouseButtonDown(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override;
-	virtual FReply NativeOnMouseMove(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent);
+	UPROPERTY(meta = (BindWidget))
+    TObjectPtr<UImage> CurrentBulidingImage;
+
+    UPROPERTY(meta = (BindWidget))
+    TObjectPtr<UImage> BuildingCursor;
+
+
+private:
+	void AddOrSetDirectionRange(float MinAngle, float MaxAngle);
+	const FDirectionHandler& FindDirectionHandleForAngle(float Angle);
+	bool IsInRange(float Angle, float Min, float Max);
+
+	UPROPERTY(EditAnywhere)
+	TArray<FDirectionHandler> DirectionHandlers;
+
+	FVector2D CurrentCursorPosition;
+
+	FDirectionHandler CurrentHandle;
+
+	const float CursorLength = 250.0f;
 };

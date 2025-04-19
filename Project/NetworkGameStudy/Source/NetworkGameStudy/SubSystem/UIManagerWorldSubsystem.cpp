@@ -48,10 +48,45 @@ void UUIManagerWorldSubsystem::HideMainUI()
 	}
 }
 
-void UUIManagerWorldSubsystem::ToggleBuildingContextUI()
+bool UUIManagerWorldSubsystem::ToggleBuildingContextUI()
 {
 	if (MainUIInstance)
 	{
-		MainUIInstance->ToggleBuildingContextWidget();
+		return MainUIInstance->ToggleBuildingContextWidget();
+	}
+
+	return false;
+}
+
+void UUIManagerWorldSubsystem::InputMouseClick()
+{
+	if (MainUIInstance)
+	{
+		MainUIInstance->InputMouseClick();
+	}
+}
+
+
+void UUIManagerWorldSubsystem::InputKey()
+{
+	if (MainUIInstance)
+	{
+		MainUIInstance->InputKey();
+	}
+}
+
+void UUIManagerWorldSubsystem::InputMouseMove(const FInputActionValue& Value)
+{
+	if (MainUIInstance)
+	{
+		MainUIInstance->InputMouseMove(Value);
+	}
+}
+
+void UUIManagerWorldSubsystem::SetInteractionWidget(ANGInteractionActorBase* InteractionActor)
+{
+	if (MainUIInstance)
+	{
+		MainUIInstance->SetInteractionWidget(InteractionActor);
 	}
 }

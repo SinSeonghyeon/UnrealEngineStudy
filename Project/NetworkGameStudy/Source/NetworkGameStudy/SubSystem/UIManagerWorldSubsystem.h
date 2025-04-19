@@ -23,10 +23,15 @@ public:
 	virtual void Deinitialize() override;
 
 	void ShowMainUI(APlayerController* PlayerController);
-
 	void HideMainUI();
 
-	void ToggleBuildingContextUI();
+	bool ToggleBuildingContextUI();
+
+	void InputMouseClick();
+	void InputKey();
+	void InputMouseMove(const FInputActionValue& Value);
+
+	void SetInteractionWidget(ANGInteractionActorBase* InteractionActor);
 
 	const TObjectPtr<UNGMainPanelWidget>& GeMainWidgetInstance() { return MainUIInstance; }
 protected:

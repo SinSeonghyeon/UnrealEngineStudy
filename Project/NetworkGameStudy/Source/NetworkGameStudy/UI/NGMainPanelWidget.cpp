@@ -23,14 +23,32 @@ void UNGMainPanelWidget::UpdateCurrentHP(int32 HP)
 	CurrentHPTextBlock->SetText(HPText);
 }
 
-void UNGMainPanelWidget::ToggleBuildingContextWidget()
+bool UNGMainPanelWidget::ToggleBuildingContextWidget()
 {
 	if (BuildingContextWidget->GetVisibility() == ESlateVisibility::Visible)
 	{
 		BuildingContextWidget->SetVisibility(ESlateVisibility::Collapsed);
+		return false;
 	}
 	else
 	{
 		BuildingContextWidget->SetVisibility(ESlateVisibility::Visible);
+		return true;
+	}
+
+	return true;
+}
+
+
+void UNGMainPanelWidget::SetInteractionWidget(ANGInteractionActorBase* InteractionActor)
+{
+	if (InteractionActor)
+	{
+		InteractionWidget->SetVisibility(ESlateVisibility::Visible);
+		InteractionWidget->SetInteractionWidget(InteractionActor);
+	}
+	else
+	{
+		InteractionWidget->SetVisibility(ESlateVisibility::Collapsed);
 	}
 }

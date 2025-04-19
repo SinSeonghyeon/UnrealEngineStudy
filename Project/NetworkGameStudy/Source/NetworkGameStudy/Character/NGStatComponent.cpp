@@ -40,9 +40,6 @@ void UNGStatComponent::Initialize(const TObjectPtr<UNGStatWidgetBase>& InStatWid
 void UNGStatComponent::BeginPlay()
 {
 	Super::BeginPlay();
-
-	// ...
-
 }
 
 void UNGStatComponent::GetLifetimeReplicatedProps(TArray< FLifetimeProperty >& OutLifetimeProps) const
@@ -55,17 +52,43 @@ void UNGStatComponent::GetLifetimeReplicatedProps(TArray< FLifetimeProperty >& O
 
 void UNGStatComponent::OnRep_ChangeMaxHP()
 {
-	if (MyStatWidget)
-		MyStatWidget->UpdateMaxHP(MaxHP);
+	if (Cast<ANGPlayerCharacter>(GetOwner()) )
+	{
+		if (MyStatWidget && GetOwner()->GetLocalRole() == ENetRole::ROLE_AutonomousProxy)
+		{
+			if (MyStatWidget)
+				MyStatWidget->UpdateMaxHP(MaxHP);
+		}
+	}
+	else
+	{
+		if (MyStatWidget)
+			MyStatWidget->UpdateMaxHP(MaxHP);
+	}
+
 	// UI update 필요
 }
 
 void UNGStatComponent::OnRep_ChangeCurrentHP()
 {
-	if (MyStatWidget)
+	if (Cast<ANGPlayerCharacter>(GetOwner()))
 	{
-		MyStatWidget->UpdateCurrentHP(CurrentHP);
-		MyStatWidget->UpdateHPProgress(static_cast<float>(CurrentHP) / static_cast<float>(MaxHP));
+		if (MyStatWidget && GetOwner()->GetLocalRole() == ENetRole::ROLE_AutonomousProxy)
+		{
+			if (MyStatWidget)
+			{
+				MyStatWidget->UpdateCurrentHP(CurrentHP);
+				MyStatWidget->UpdateHPProgress(static_cast<float>(CurrentHP) / static_cast<float>(MaxHP));
+			}
+		}
+	}
+	else
+	{
+		if (MyStatWidget)
+		{
+			MyStatWidget->UpdateCurrentHP(CurrentHP);
+			MyStatWidget->UpdateHPProgress(static_cast<float>(CurrentHP) / static_cast<float>(MaxHP));
+		}
 	}
 	// UI update 필요
 }

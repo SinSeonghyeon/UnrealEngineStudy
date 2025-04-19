@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Blueprint/UserWidget.h"
+#include "NGInputWidgetBase.h"
 #include "NGStatWidgetBase.generated.h"
 
 /**
@@ -11,7 +11,7 @@
  * StatComponent에서 캐싱하고 있습니다.
  */
 UCLASS()
-class NETWORKGAMESTUDY_API UNGStatWidgetBase : public UUserWidget
+class NETWORKGAMESTUDY_API UNGStatWidgetBase : public UNGInputWidgetBase
 {
 	GENERATED_BODY()
 	

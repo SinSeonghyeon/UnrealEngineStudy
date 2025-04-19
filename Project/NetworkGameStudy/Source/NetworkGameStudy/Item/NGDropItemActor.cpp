@@ -21,13 +21,24 @@ ANGDropItemActor::ANGDropItemActor()
 	bReplicates = true;
 }
 
+void ANGDropItemActor::DoIneraction()
+{
+	// 플레이어에게 아이템 지급 필요.
+	NG_LOG(LogTemp, Log, TEXT("Begin"));
+
+	if (ANGPlayerController* Controller = Cast<ANGPlayerController>(GetWorld()->GetFirstPlayerController()))
+	{
+		Controller->ServerRPCRequestDestroyActor(this);
+	}
+}
+
 // Called when the game starts or when spawned
 void ANGDropItemActor::BeginPlay()
 {
 	Super::BeginPlay();
 
-	MeshComponent->OnComponentBeginOverlap.AddDynamic(this, &ANGDropItemActor::OnMeshOverlapBegin);
-	MeshComponent->OnComponentEndOverlap.AddDynamic(this, &ANGDropItemActor::OnMeshOverlapEnd);
+	MeshComponent->OnComponentBeginOverlap.AddDynamic(this, &ANGDropItemActor::OnInteractionOverlapBegin);
+	MeshComponent->OnComponentEndOverlap.AddDynamic(this, &ANGDropItemActor::OnInteractionOverlapEnd);
 }
 
 void ANGDropItemActor::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -37,13 +48,15 @@ void ANGDropItemActor::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Out
 	DOREPLIFETIME(ANGDropItemActor, Mesh_Rep);
 }
 
-void ANGDropItemActor::OnMeshOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+void ANGDropItemActor::OnInteractionOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
+	Super::OnInteractionOverlapBegin(OverlappedComp, OtherActor, OtherComp, OtherBodyIndex, bFromSweep, SweepResult);
 	NG_LOG(LogTemp, Log, TEXT("OverlapBegin"));
 }
 
-void ANGDropItemActor::OnMeshOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
+void ANGDropItemActor::OnInteractionOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
 {
+	Super::OnInteractionOverlapEnd(OverlappedComponent, OtherActor, OtherComp, OtherBodyIndex);
 	NG_LOG(LogTemp, Log, TEXT("OverlapEnd"));
 }
 

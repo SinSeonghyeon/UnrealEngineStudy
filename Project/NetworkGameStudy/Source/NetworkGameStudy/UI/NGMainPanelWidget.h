@@ -23,8 +23,9 @@ public:
 	virtual void UpdateMaxHP(int32 HP);
 	virtual void UpdateCurrentHP(int32 HP);
 
-	void ToggleBuildingContextWidget();
+	bool ToggleBuildingContextWidget();
 
+	void SetInteractionWidget(ANGInteractionActorBase* InteractionActor);
 protected:
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UProgressBar> HealthProgressBar;
@@ -36,5 +37,8 @@ protected:
 	TObjectPtr<UTextBlock> MaxHPTextBlock;
 
 	UPROPERTY(meta = (BindWidget))
-	TObjectPtr<UNGBuildingContextWidget> BuildingContextWidget;
+	TObjectPtr<UNGBuildingContextWidget> BuildingContextWidget;	
+	
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UNGInteractionWidget> InteractionWidget;
 };
