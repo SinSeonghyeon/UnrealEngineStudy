@@ -28,12 +28,16 @@ public:
 	virtual void BeginPlay() override;
 	virtual FText GetInteractionText() const { return FText::FromString(TEXT("건축")); }
 
-	virtual void DoIneraction() override;
+	virtual void DoIneraction(ANGPlayerController* PlayerController) override;
+	virtual void CancelIneraction(ANGPlayerController* PlayerController) override;
 protected:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 	UFUNCTION()
 	void OnRep_ChangedMesh();
+
+	UFUNCTION()
+	void OnRep_SetPercent();
 
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
@@ -47,6 +51,7 @@ protected:
 	UPROPERTY(VisibleAnywhere)
 	TObjectPtr<UMaterialInterface> BaseMaterial;
 
+	UPROPERTY(ReplicatedUsing = OnRep_SetPercent)
 	float Percent = 0.0f;
 
 

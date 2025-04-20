@@ -34,6 +34,9 @@ public:
 	UFUNCTION(Server, Reliable)
 	void ServerRPCSpawnPalSphere();
 
+	UFUNCTION(Server, Reliable)
+	void ServerRPCSetPlayBuilindg(bool bEnable);
+
 	// ---------------- EnhancedInput 관련 함수 ---------------------------
 	/** Called for movement input */
 	void Move(const FInputActionValue& Value);
@@ -63,6 +66,9 @@ protected:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 	virtual void InitializeStatComponent() override;
+
+	// 서버에서 호출됩니다.
+	virtual void DieCharacter() override;
 private:
 	// Controller 기준으로 캐릭터 Yaw값을 회전시키는 포커스 요청을 기록하는 스택입니다.
 	// 스택이 비어있다면 무브먼트 기준으로 변경됩니다.
@@ -74,7 +80,7 @@ private:
 
 	// 팰스피어 투척을 위한 락온 여부를 확인하는 변수입니다.
 	UPROPERTY(ReplicatedUsing = OnRep_ChangedIsPalSphereLockOn)
-	bool IsPalSphereLockOn = false;
+	bool bIsPalSphereLockOn = false;
 
 private:
 	UFUNCTION()
@@ -92,6 +98,9 @@ private:
 
 	UFUNCTION(Server, Reliable)
 	void ServerRPCSetIsPalSphereLockOn(bool bLockOn);
+
+	UFUNCTION()
+	void OnRep_PlayBuilding();
 
 private:
 
@@ -114,5 +123,8 @@ private:
 	// 펠스피어 메시
 	UPROPERTY(Transient)
 	TObjectPtr<USkeletalMesh> PalSphereMesh;
+
+	UPROPERTY(ReplicatedUsing = OnRep_PlayBuilding)
+	bool bIsPlayBuilding = false;
 };
 

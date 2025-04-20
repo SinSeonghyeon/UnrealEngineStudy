@@ -88,6 +88,17 @@ void ANGPalCharacter::InitializeStatComponent()
 	}
 }
 
+void ANGPalCharacter::DieCharacter()
+{
+	Super::DieCharacter();
+
+	if (GetController())
+	{
+		GetController()->UnPossess();
+		GetController()->Destroy();
+	}
+}
+
 void ANGPalCharacter::UpdateMaxWalkSpeed(float NewSpeed)
 {
 	GetCharacterMovement()->MaxWalkSpeed = NewSpeed;

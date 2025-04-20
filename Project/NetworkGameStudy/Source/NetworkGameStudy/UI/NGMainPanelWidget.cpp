@@ -35,10 +35,21 @@ bool UNGMainPanelWidget::ToggleBuildingContextWidget()
 		BuildingContextWidget->SetVisibility(ESlateVisibility::Visible);
 		return true;
 	}
-
-	return true;
 }
 
+bool UNGMainPanelWidget::ToggleInventoryWidget()
+{
+	if (InventoryWidget->GetVisibility() == ESlateVisibility::Visible)
+	{
+		InventoryWidget->SetVisibility(ESlateVisibility::Collapsed);
+		return false;
+	}
+	else
+	{
+		InventoryWidget->SetVisibility(ESlateVisibility::Visible);
+		return true;
+	}
+}
 
 void UNGMainPanelWidget::SetInteractionWidget(ANGInteractionActorBase* InteractionActor)
 {
@@ -51,4 +62,10 @@ void UNGMainPanelWidget::SetInteractionWidget(ANGInteractionActorBase* Interacti
 	{
 		InteractionWidget->SetVisibility(ESlateVisibility::Collapsed);
 	}
+}
+
+void UNGMainPanelWidget::UpdateItemWidget(const TMap<FName, int32>& ItemList)
+{
+	if (InventoryWidget)
+		InventoryWidget->UpdateItemWidget(ItemList);
 }

@@ -17,18 +17,31 @@ UCLASS()
 class NETWORKGAMESTUDY_API ANGPlayerController : public APlayerController
 {
 	GENERATED_BODY()
-	
 
 public:
 	// 임시로 스태틱 메시를 변수로 넘겨주고 있지만, 추후에는 건축 정보를 넘겨주는 식으로 변경하여야 합니다.
 	void SetBuildMode(bool bIsSet, const TObjectPtr<UStaticMesh>& BuildingMesh = nullptr);
 
-	void AddInteractionActor(TWeakObjectPtr<ANGInteractionActorBase> InteractionActor);
-	void RemoveInteractionActor(TWeakObjectPtr<ANGInteractionActorBase> InteractionActor);
+	UFUNCTION(Server, Reliable)
+	void ServerRPCAddInteractionActor(ANGInteractionActorBase* InteractionActor);
+	
+	UFUNCTION(Server, Reliable)
+	void ServerRPCRemoveInteractionActor(ANGInteractionActorBase* InteractionActor);
+
+	UFUNCTION(Server, Reliable)
+	void ServerRPCRequestDoInteraction(ANGInteractionActorBase* InteractionActor);
+
+	UFUNCTION(Server, Reliable)
+	void ServerRPCRequestCancelInteraction(ANGInteractionActorBase* InteractionActor);
 
 	UFUNCTION(Server, Reliable)
 	void ServerRPCRequestDestroyActor(AActor* Actor);
 
+	UFUNCTION(Client, Reliable)
+	void ClientRPCSetInteractionWidget(ANGInteractionActorBase* InteractionActor);
+
+	UFUNCTION(Client, Reliable)
+	void ClientRPCAddItem(FName ItemID);
 private:
 	UFUNCTION(Server, Reliable)
 	void ServerRPCSpawnPreviewActor(UStaticMesh* BuildingMesh);
@@ -67,7 +80,9 @@ protected:
 	void LockOn(const FInputActionValue& Value);
 	void LockOnCancel(const FInputActionValue& Value);
 	void ToggleBuildingWidget();
+	void ToggleInventoryWidget();
 	void Interaction();
+	void InteractionCancel();
 	void UIClick();
 	void UIMouseMove(const FInputActionValue& Value);
 	void BuildConfirm();
@@ -134,14 +149,19 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UInputAction> IntractionAction;
 
+	/** IntractionAction Input Action */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UInputAction> InventoryToggleAction;
+
 private:
 	TObjectPtr<UUIManagerWorldSubsystem> CachedUIManager;
-
-	UPROPERTY(Replicated)
-	TObjectPtr<ANGBuildingPreviewActor> BuildingPreviewActor;
 
 	TSet<TWeakObjectPtr<ANGInteractionActorBase>> InteractionActorSet;
 	TWeakObjectPtr<ANGInteractionActorBase> CurrentInteractionActor;
 
-	
+	UPROPERTY(Replicated)
+	TObjectPtr<ANGBuildingPreviewActor> BuildingPreviewActor;
+
+	// <FName, int32> == <ItmeID, Count>
+	TMap<FName, int32> MyItems;
 };

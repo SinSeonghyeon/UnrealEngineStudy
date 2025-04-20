@@ -21,15 +21,14 @@ ANGDropItemActor::ANGDropItemActor()
 	bReplicates = true;
 }
 
-void ANGDropItemActor::DoIneraction()
+// 서버에서 호출됩니다.
+void ANGDropItemActor::DoIneraction(ANGPlayerController* PlayerController)
 {
-	// 플레이어에게 아이템 지급 필요.
-	NG_LOG(LogTemp, Log, TEXT("Begin"));
+	// 서버에도 아이템을 같이 업데이트 하는 이유는 추후에 아이템을 사용할 시점에 유효성 검사를 하기 위함입니다.
+	PlayerController->ClientRPCAddItem(ItemID);
+	PlayerController->ClientRPCAddItem_Implementation(ItemID);
 
-	if (ANGPlayerController* Controller = Cast<ANGPlayerController>(GetWorld()->GetFirstPlayerController()))
-	{
-		Controller->ServerRPCRequestDestroyActor(this);
-	}
+	Destroy();
 }
 
 // Called when the game starts or when spawned
@@ -37,8 +36,11 @@ void ANGDropItemActor::BeginPlay()
 {
 	Super::BeginPlay();
 
-	MeshComponent->OnComponentBeginOverlap.AddDynamic(this, &ANGDropItemActor::OnInteractionOverlapBegin);
-	MeshComponent->OnComponentEndOverlap.AddDynamic(this, &ANGDropItemActor::OnInteractionOverlapEnd);
+	if (GetNetMode() == ENetMode::NM_Client)
+	{
+		MeshComponent->OnComponentBeginOverlap.AddDynamic(this, &ANGDropItemActor::OnInteractionOverlapBegin);
+		MeshComponent->OnComponentEndOverlap.AddDynamic(this, &ANGDropItemActor::OnInteractionOverlapEnd);
+	}
 }
 
 void ANGDropItemActor::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -46,18 +48,6 @@ void ANGDropItemActor::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Out
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
 	DOREPLIFETIME(ANGDropItemActor, Mesh_Rep);
-}
-
-void ANGDropItemActor::OnInteractionOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
-{
-	Super::OnInteractionOverlapBegin(OverlappedComp, OtherActor, OtherComp, OtherBodyIndex, bFromSweep, SweepResult);
-	NG_LOG(LogTemp, Log, TEXT("OverlapBegin"));
-}
-
-void ANGDropItemActor::OnInteractionOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
-{
-	Super::OnInteractionOverlapEnd(OverlappedComponent, OtherActor, OtherComp, OtherBodyIndex);
-	NG_LOG(LogTemp, Log, TEXT("OverlapEnd"));
 }
 
 void ANGDropItemActor::OnRep_MeshChanged()

@@ -3,11 +3,12 @@
 
 #include "Building/NGBuildingPreviewActor.h"
 #include "Net/UnrealNetwork.h"
+#include "Engine/StaticMeshActor.h"
 
 ANGBuildingPreviewActor::ANGBuildingPreviewActor()
 {
 	BuildingMeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("StaticMeshComponent"));
-	BuildingMeshComponent->SetCollisionProfileName("NoCollision");
+	BuildingMeshComponent->SetCollisionProfileName("OverlapOnlyPawn");
 
 	PrimaryActorTick.bCanEverTick = true;
 
@@ -15,6 +16,8 @@ ANGBuildingPreviewActor::ANGBuildingPreviewActor()
 	if (nullptr != Material.Object)
 	{
 		BaseMaterial = Material.Object;
+		DynMaterial = UMaterialInstanceDynamic::Create(BaseMaterial, this);
+		BuildingMeshComponent->SetMaterial(0, DynMaterial);
 	}
 
 	bReplicates = true;
@@ -31,24 +34,44 @@ void ANGBuildingPreviewActor::SetBuildingMesh(UStaticMesh* NewMesh)
 void ANGBuildingPreviewActor::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-
-	Percent += DeltaTime / 2.0f;
-
-	DynMaterial->SetScalarParameterValue(TEXT("BuildingPercent"), Percent);
 }
 
 void ANGBuildingPreviewActor::BeginPlay()
 {
 	Super::BeginPlay();
 
-	DynMaterial = UMaterialInstanceDynamic::Create(BaseMaterial, this);
-	BuildingMeshComponent->SetMaterial(0, DynMaterial);
+	if (GetNetMode() == ENetMode::NM_Client)
+	{
+		BuildingMeshComponent->OnComponentBeginOverlap.AddDynamic(this, &ANGBuildingPreviewActor::OnInteractionOverlapBegin);
+		BuildingMeshComponent->OnComponentEndOverlap.AddDynamic(this, &ANGBuildingPreviewActor::OnInteractionOverlapEnd);
+	}
+}
+
+// 서버에서 호출됩니다.
+void ANGBuildingPreviewActor::DoIneraction(ANGPlayerController* PlayerController)
+{
+	Percent += 0.002f;
+
+	Cast<ANGPlayerCharacter>(PlayerController->GetPawn())->ServerRPCSetPlayBuilindg(true);
+
+	if (Percent > 1.0f)
+	{
+		AStaticMeshActor* NewActor = GetWorld()->SpawnActor<AStaticMeshActor>(AStaticMeshActor::StaticClass(), GetActorLocation(), GetActorRotation());
+		NewActor->SetMobility(EComponentMobility::Movable);
+		NewActor->GetStaticMeshComponent()->SetStaticMesh(BuildingMesh);
+		NewActor->GetStaticMeshComponent()->SetIsReplicated(true);
+		NewActor->SetReplicates(true);
+
+		CancelIneraction(PlayerController);
+
+		Destroy();
+	}
 }
 
 
-void ANGBuildingPreviewActor::DoIneraction()
+void ANGBuildingPreviewActor::CancelIneraction(ANGPlayerController* PlayerController)
 {
-	
+	Cast<ANGPlayerCharacter>(PlayerController->GetPawn())->ServerRPCSetPlayBuilindg(false);
 }
 
 void ANGBuildingPreviewActor::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -56,9 +79,16 @@ void ANGBuildingPreviewActor::GetLifetimeReplicatedProps(TArray<FLifetimePropert
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
 	DOREPLIFETIME(ANGBuildingPreviewActor, BuildingMesh);
+	DOREPLIFETIME(ANGBuildingPreviewActor, Percent);
 }
 
 void ANGBuildingPreviewActor::OnRep_ChangedMesh()
 {
 	BuildingMeshComponent->SetStaticMesh(BuildingMesh);
+}
+
+void ANGBuildingPreviewActor::OnRep_SetPercent()
+{
+	if (DynMaterial)
+		DynMaterial->SetScalarParameterValue(TEXT("BuildingPercent"), Percent);
 }

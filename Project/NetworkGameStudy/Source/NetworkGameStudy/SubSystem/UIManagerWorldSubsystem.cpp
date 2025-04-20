@@ -58,6 +58,16 @@ bool UUIManagerWorldSubsystem::ToggleBuildingContextUI()
 	return false;
 }
 
+
+bool UUIManagerWorldSubsystem::ToggleInventoryUI()
+{
+	if (MainUIInstance)
+	{
+		return MainUIInstance->ToggleInventoryWidget();
+	}
+	return false;
+}
+
 void UUIManagerWorldSubsystem::InputMouseClick()
 {
 	if (MainUIInstance)
@@ -75,6 +85,15 @@ void UUIManagerWorldSubsystem::InputKey()
 	}
 }
 
+
+void UUIManagerWorldSubsystem::InputKeyRelease()
+{
+	if (MainUIInstance)
+	{
+		MainUIInstance->InputKeyRelease();
+	}
+}
+
 void UUIManagerWorldSubsystem::InputMouseMove(const FInputActionValue& Value)
 {
 	if (MainUIInstance)
@@ -88,5 +107,13 @@ void UUIManagerWorldSubsystem::SetInteractionWidget(ANGInteractionActorBase* Int
 	if (MainUIInstance)
 	{
 		MainUIInstance->SetInteractionWidget(InteractionActor);
+	}
+}
+
+void UUIManagerWorldSubsystem::UpdateItemWidget(const TMap<FName, int32>& ItemList)
+{
+	if (MainUIInstance)
+	{
+		MainUIInstance->UpdateItemWidget(ItemList);
 	}
 }

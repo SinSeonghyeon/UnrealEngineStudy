@@ -28,6 +28,8 @@ public:
 
 	virtual void InitializeStatComponent() override;
 
+	// 서버에서 호출됩니다.
+	virtual void DieCharacter();
 public:
 	UFUNCTION(NetMulticast, Reliable)
 	void MulticastRPCTryCapture();

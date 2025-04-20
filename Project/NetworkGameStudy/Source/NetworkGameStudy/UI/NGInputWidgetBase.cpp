@@ -44,6 +44,18 @@ bool UNGInputWidgetBase::InputKey()
 	return false;
 }
 
+
+bool UNGInputWidgetBase::InputKeyRelease()
+{
+	for (const auto& Widget : UserWidgetChildren)
+	{
+		if (Widget->GetVisibility() != ESlateVisibility::Collapsed && Widget->InputKeyRelease())
+			return true;
+	}
+
+	return false;
+}
+
 void UNGInputWidgetBase::NativeConstruct()
 {
 	Super::NativeConstruct();

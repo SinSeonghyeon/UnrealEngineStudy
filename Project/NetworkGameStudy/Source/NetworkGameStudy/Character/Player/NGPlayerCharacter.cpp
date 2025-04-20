@@ -74,7 +74,8 @@ void ANGPlayerCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& O
 
 	DOREPLIFETIME(ANGPlayerCharacter, TargetFocusStack_Rep);
 	DOREPLIFETIME(ANGPlayerCharacter, CurrentWeaponMeshName);
-	DOREPLIFETIME(ANGPlayerCharacter, IsPalSphereLockOn);
+	DOREPLIFETIME(ANGPlayerCharacter, bIsPalSphereLockOn);
+	DOREPLIFETIME(ANGPlayerCharacter, bIsPlayBuilding);
 }
 
 void ANGPlayerCharacter::InitializeStatComponent()
@@ -83,6 +84,14 @@ void ANGPlayerCharacter::InitializeStatComponent()
 	{
 		NGStatComponent->Initialize(UIManager->GeMainWidgetInstance());
 	}
+}
+
+void ANGPlayerCharacter::DieCharacter()
+{
+	Super::DieCharacter();
+
+	if (GetController())
+		GetController()->UnPossess();
 }
 
 void ANGPlayerCharacter::OnRep_ChangedFocusStack()
@@ -121,7 +130,7 @@ void ANGPlayerCharacter::OnRep_ChangedIsPalSphereLockOn()
 {
 	NG_LOG(LogTemp, Log, TEXT("Begin"));
 
-	if (IsPalSphereLockOn)
+	if (bIsPalSphereLockOn)
 		GetCachedAnimInstance()->PlayLockOn();
 	else
 		GetCachedAnimInstance()->StopLockOn();
@@ -132,10 +141,11 @@ void ANGPlayerCharacter::OnRep_ChangedIsPalSphereLockOn()
 void ANGPlayerCharacter::Move(const FInputActionValue& Value)
 {
 	// input is a Vector2D
-	FVector2D MovementVector = Value.Get<FVector2D>();
 
-	if (Controller != nullptr)
+	if (!bIsPlayBuilding && Controller != nullptr)
 	{
+		FVector2D MovementVector = Value.Get<FVector2D>();
+		
 		// find out which way is forward
 		const FRotator Rotation = Controller->GetControlRotation();
 		const FRotator YawRotation(0, Rotation.Yaw, 0);
@@ -167,7 +177,9 @@ void ANGPlayerCharacter::Look(const FInputActionValue& Value)
 
 void ANGPlayerCharacter::AttackTriggered(const FInputActionValue& Value)
 {
-	if (!IsPalSphereLockOn)
+	if (bIsPlayBuilding) return;
+
+	if (!bIsPalSphereLockOn)
 	{
 		Attack_Implementation();
 	}
@@ -179,6 +191,8 @@ void ANGPlayerCharacter::AttackTriggered(const FInputActionValue& Value)
 
 void ANGPlayerCharacter::AttackStarted(const FInputActionValue& Value)
 {
+	if (bIsPlayBuilding) return;
+
 	ServerRPCTryFocusTarget(true, TEXT("ANGPlayerCharacter::AttackStarted"));
 }
 
@@ -223,7 +237,13 @@ void ANGPlayerCharacter::ServerRPCTryFocusTarget_Implementation(bool InUseContro
 
 void ANGPlayerCharacter::ServerRPCSetIsPalSphereLockOn_Implementation(bool bLockOn)
 {
-	IsPalSphereLockOn = bLockOn;
+	bIsPalSphereLockOn = bLockOn;
+}
+
+void ANGPlayerCharacter::OnRep_PlayBuilding()
+{
+	if (GetCachedAnimInstance())
+		GetCachedAnimInstance()->SetBuilding(bIsPlayBuilding);
 }
 
 void ANGPlayerCharacter::ServerRPCChangeWeaponMesh_Implementation(FName WeaponName)
@@ -246,7 +266,10 @@ void ANGPlayerCharacter::ServerRPCSpawnPalSphere_Implementation()
 		PalSphere->SetOwner(this);
 }
 
-
+void ANGPlayerCharacter::ServerRPCSetPlayBuilindg_Implementation(bool bEnable)
+{
+	bIsPlayBuilding = bEnable;
+}
 
 void ANGPlayerCharacter::ThrowPalSphere()
 {

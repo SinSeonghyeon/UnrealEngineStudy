@@ -9,6 +9,7 @@
 
 class UProgressBar;
 class UTextBlock;
+class UNGInventoryWidget;
 
 /**
  *
@@ -24,8 +25,10 @@ public:
 	virtual void UpdateCurrentHP(int32 HP);
 
 	bool ToggleBuildingContextWidget();
+	bool ToggleInventoryWidget();
 
 	void SetInteractionWidget(ANGInteractionActorBase* InteractionActor);
+	void UpdateItemWidget(const TMap<FName, int32>& ItemList);
 protected:
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UProgressBar> HealthProgressBar;
@@ -39,6 +42,9 @@ protected:
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UNGBuildingContextWidget> BuildingContextWidget;	
 	
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UNGInventoryWidget> InventoryWidget;
+
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UNGInteractionWidget> InteractionWidget;
 };

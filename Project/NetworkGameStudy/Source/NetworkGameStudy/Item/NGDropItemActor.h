@@ -18,7 +18,7 @@ public:
 
 public:
 	virtual FText GetInteractionText() const { return FText::FromString(TEXT("획득")); }
-	virtual void DoIneraction() override;
+	virtual void DoIneraction(ANGPlayerController* PlayerController) override;
 
 protected:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
@@ -38,11 +38,4 @@ protected:
 private:
 	UFUNCTION()
 	void OnRep_MeshChanged();
-
-	UFUNCTION()
-	virtual void OnInteractionOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult) override;
-
-	UFUNCTION()
-	virtual void OnInteractionOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex) override;
-
 };

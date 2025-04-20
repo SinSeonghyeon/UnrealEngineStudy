@@ -146,11 +146,6 @@ void ANGCharacterBase::DieCharacter()
 	NG_LOG(LogTemp, Log, TEXT("Begin"));
 	MulticastRPCDoRagdoll();
 	//기본으로 제공해주는 Ragdoll용 CollisionProfile로 설정
-
-	if (GetController())
-	{
-		GetController()->UnPossess();
-	}
 }
 
 void ANGCharacterBase::ServerRPCAttack_PlayAnim_Implementation(float AttackStartTime)

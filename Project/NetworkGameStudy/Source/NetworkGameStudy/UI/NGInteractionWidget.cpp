@@ -13,8 +13,22 @@ bool UNGInteractionWidget::InputKey()
 {
 	Super::InputKey();
 
-	if(InteractionActor)
-		InteractionActor->DoIneraction();
+	if (InteractionActor)
+	{
+		Cast<ANGPlayerController>(GetWorld()->GetFirstPlayerController())->ServerRPCRequestDoInteraction(InteractionActor);
+	}
 
+	return true;
+}
+
+bool UNGInteractionWidget::InputKeyRelease()
+{
+	Super::InputKeyRelease();
+
+	if (InteractionActor)
+	{
+		Cast<ANGPlayerController>(GetWorld()->GetFirstPlayerController())->ServerRPCRequestCancelInteraction(InteractionActor);
+	}
+	
 	return true;
 }

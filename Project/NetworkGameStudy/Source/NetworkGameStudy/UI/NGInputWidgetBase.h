@@ -26,6 +26,7 @@ public:
 	virtual bool InputMouseClick();
 	virtual bool InputMouseMove(const FInputActionValue& Value);
 	virtual bool InputKey();
+	virtual bool InputKeyRelease();
 protected:
 	virtual void NativeConstruct() override;
 

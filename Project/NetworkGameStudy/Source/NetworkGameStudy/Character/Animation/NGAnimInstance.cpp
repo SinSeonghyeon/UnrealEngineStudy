@@ -64,3 +64,8 @@ void UNGAnimInstance::PlayAnimFromName(FName AnimName)
 		StopLockOn();
 	}
 }
+
+void UNGAnimInstance::SetBuilding(bool bEnable)
+{
+	bIsBuilding = bEnable;
+}

@@ -25,7 +25,7 @@ void ANGInteractionActorBase::OnInteractionOverlapBegin(UPrimitiveComponent* Ove
 	{
 		if (ANGPlayerController* Controller = Cast<ANGPlayerController>(Character->GetController()))
 		{
-			Controller->AddInteractionActor(this);
+			Controller->ServerRPCAddInteractionActor(this);
 		}
 	}
 }
@@ -36,7 +36,7 @@ void ANGInteractionActorBase::OnInteractionOverlapEnd(UPrimitiveComponent* Overl
 	{
 		if (ANGPlayerController* Controller = Cast<ANGPlayerController>(Character->GetController()))
 		{
-			Controller->RemoveInteractionActor(this);
+			Controller->ServerRPCRemoveInteractionActor(this);
 		}
 	}
 }

@@ -26,12 +26,16 @@ public:
 	void HideMainUI();
 
 	bool ToggleBuildingContextUI();
+	bool ToggleInventoryUI();
 
 	void InputMouseClick();
 	void InputKey();
+	void InputKeyRelease();
 	void InputMouseMove(const FInputActionValue& Value);
 
 	void SetInteractionWidget(ANGInteractionActorBase* InteractionActor);
+
+	void UpdateItemWidget(const TMap<FName, int32>& ItemList);
 
 	const TObjectPtr<UNGMainPanelWidget>& GeMainWidgetInstance() { return MainUIInstance; }
 protected:

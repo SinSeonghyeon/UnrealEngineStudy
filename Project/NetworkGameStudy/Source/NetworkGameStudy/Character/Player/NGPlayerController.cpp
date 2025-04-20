@@ -22,25 +22,25 @@ void ANGPlayerController::SetBuildMode(bool bIsSet, const TObjectPtr<UStaticMesh
 	}
 }
 
-void ANGPlayerController::AddInteractionActor(TWeakObjectPtr<ANGInteractionActorBase> InteractionActor)
+void ANGPlayerController::ServerRPCAddInteractionActor_Implementation(ANGInteractionActorBase* InteractionActor)
 {
-	if (InteractionActor.IsValid())
+	if (IsValid(InteractionActor))
 	{
 		InteractionActorSet.Add(InteractionActor);
-		CachedUIManager->SetInteractionWidget(InteractionActor.Get());
+		ClientRPCSetInteractionWidget(InteractionActor);
 
 		CurrentInteractionActor = InteractionActor;
 	}
 }
 
-void ANGPlayerController::RemoveInteractionActor(TWeakObjectPtr<ANGInteractionActorBase> InteractionActor)
+void ANGPlayerController::ServerRPCRemoveInteractionActor_Implementation(ANGInteractionActorBase* InteractionActor)
 {
 	InteractionActorSet.Remove(InteractionActor);
 
 
 	if (InteractionActorSet.IsEmpty())
 	{
-		CachedUIManager->SetInteractionWidget(nullptr);
+		ClientRPCSetInteractionWidget(nullptr);
 	}
 	else
 	{
@@ -52,7 +52,7 @@ void ANGPlayerController::RemoveInteractionActor(TWeakObjectPtr<ANGInteractionAc
 			{
 				if (Iter.IsValid())
 				{
-					CachedUIManager->SetInteractionWidget(Iter.Get());
+					ClientRPCSetInteractionWidget(Iter.Get());
 					CurrentInteractionActor = *InteractionActorSet.begin();
 					break;
 				}
@@ -68,12 +68,48 @@ void ANGPlayerController::RemoveInteractionActor(TWeakObjectPtr<ANGInteractionAc
 			}
 		}
 	}
-	
+
+}
+
+
+void ANGPlayerController::ServerRPCRequestDoInteraction_Implementation(ANGInteractionActorBase* InteractionActor)
+{
+	if (InteractionActorSet.Contains(InteractionActor) && IsValid(InteractionActor))
+	{
+		InteractionActor->DoIneraction(this);
+	}
+}
+
+
+void ANGPlayerController::ServerRPCRequestCancelInteraction_Implementation(ANGInteractionActorBase* InteractionActor)
+{
+	if (InteractionActorSet.Contains(InteractionActor) && IsValid(InteractionActor))
+	{
+		InteractionActor->CancelIneraction(this);
+	}
 }
 
 void ANGPlayerController::ServerRPCRequestDestroyActor_Implementation(AActor* Actor)
 {
 	Actor->Destroy();
+}
+
+
+void ANGPlayerController::ClientRPCSetInteractionWidget_Implementation(ANGInteractionActorBase* InteractionActor)
+{
+	CachedUIManager->SetInteractionWidget(InteractionActor);
+}
+
+void ANGPlayerController::ClientRPCAddItem_Implementation(FName ItemID)
+{
+	if (!MyItems.Contains(ItemID))
+	{
+		MyItems.Add(ItemID , 0);
+	}
+
+	MyItems[ItemID]++;
+
+	CachedUIManager->UpdateItemWidget(MyItems);
 }
 
 void ANGPlayerController::OnPossess(APawn* aPawn)
@@ -134,9 +170,13 @@ void ANGPlayerController::Tick(float DeltaTime)
 
 		FVector End = Start + ViewRot.Vector() * 10000.f;
 
+		FCollisionQueryParams Parmas = FCollisionQueryParams::DefaultQueryParam;
+		Parmas.AddIgnoredActor(BuildingPreviewActor.Get());
+
 		FHitResult Hit;
-		if (GetWorld()->LineTraceSingleByObjectType(Hit, Start, End, FCollisionObjectQueryParams::AllStaticObjects, FCollisionQueryParams::DefaultQueryParam))
+		if (GetWorld()->LineTraceSingleByObjectType(Hit, Start, End, FCollisionObjectQueryParams::AllStaticObjects, Parmas))
 		{
+			UE_LOG(LogTemp, Log, TEXT("TEXT %s"), *Hit.GetActor()->GetActorNameOrLabel());
 			ServerRPCMovePreviewActor(Hit.Location);
 		}
 	}
@@ -162,6 +202,9 @@ void ANGPlayerController::SetEnhancedInput(TObjectPtr<UEnhancedInputComponent> E
 	EnhancedInputComponent->BindAction(LockOnAction, ETriggerEvent::Completed, this, &ANGPlayerController::LockOnCancel);
 	EnhancedInputComponent->BindAction(BuildingWidgetToggleAction, ETriggerEvent::Started, this, &ANGPlayerController::ToggleBuildingWidget);
 	EnhancedInputComponent->BindAction(IntractionAction, ETriggerEvent::Started, this, &ANGPlayerController::Interaction);
+	EnhancedInputComponent->BindAction(IntractionAction, ETriggerEvent::Triggered, this, &ANGPlayerController::Interaction);
+	EnhancedInputComponent->BindAction(IntractionAction, ETriggerEvent::Completed, this, &ANGPlayerController::InteractionCancel);
+	EnhancedInputComponent->BindAction(InventoryToggleAction, ETriggerEvent::Started, this, &ANGPlayerController::ToggleInventoryWidget);
 
 	// ------------------------ UI ------------------------
 	EnhancedInputComponent->BindAction(UIClickAction, ETriggerEvent::Started, this, &ANGPlayerController::UIClick);
@@ -226,7 +269,7 @@ void ANGPlayerController::Move(const FInputActionValue& Value)
 
 void ANGPlayerController::Look(const FInputActionValue& Value)
 {
-	if (GetPlayerCharacter())
+	if (GetPlayerCharacter() && !bShowMouseCursor)
 		GetPlayerCharacter()->Look(Value);
 }
 
@@ -279,13 +322,27 @@ void ANGPlayerController::ToggleBuildingWidget()
 }
 
 
+void ANGPlayerController::ToggleInventoryWidget()
+{
+	if (CachedUIManager->ToggleInventoryUI())
+	{
+		bShowMouseCursor = true;
+	}
+	else
+	{
+		bShowMouseCursor = false;
+	}
+}
+
 void ANGPlayerController::Interaction()
 {
-	if(!CurrentInteractionActor.IsValid())
-		RemoveInteractionActor(CurrentInteractionActor);
+	CachedUIManager->InputKey();
+}
 
-	if(CurrentInteractionActor.IsValid())
-		CachedUIManager->InputKey();
+
+void ANGPlayerController::InteractionCancel()
+{
+	CachedUIManager->InputKeyRelease();
 }
 
 void ANGPlayerController::UIClick()

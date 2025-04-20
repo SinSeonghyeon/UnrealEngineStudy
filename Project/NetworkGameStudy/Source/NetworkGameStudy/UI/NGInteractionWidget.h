@@ -19,6 +19,7 @@ class NETWORKGAMESTUDY_API UNGInteractionWidget : public UNGInputWidgetBase
 public:
 	void SetInteractionWidget(ANGInteractionActorBase* InInteractionActor);
 	virtual bool InputKey() override;
+	virtual bool InputKeyRelease() override;
 
 private:
 	UPROPERTY(meta = (BindWidget))

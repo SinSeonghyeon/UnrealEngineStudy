@@ -36,6 +36,8 @@ public:
 	// 추후에 고친다면 맵 자료구조를 이용하여 몽타주를 저장할 것 같습니다.
 	void PlayAnimFromName(FName AnimName);
 
+	void SetBuilding(bool bEnable);
+
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Montages")
 	TObjectPtr<UAnimMontage> AttackMontage;
@@ -45,4 +47,7 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Montages")
 	TObjectPtr<UAnimMontage> OnLockMontage;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Custom")
+	bool bIsBuilding = false;
 };
